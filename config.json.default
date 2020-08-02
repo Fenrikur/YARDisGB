@@ -1,7 +1,7 @@
 {
 	"prefix": "!",
     "token": "",
-    "game": {
+    "games": {
         "word_morphing": {
             "allowSameUser": true
         }
