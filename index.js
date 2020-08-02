@@ -15,11 +15,15 @@ client.once('ready', () => {
 });
 
 client.on('message', message => {
+	console.log(message);
 	if (message.author.id === client.user.id) {
 		console.log('Message by myself. Let\'s not go there again …');
 		return;
 	} else if (message.author.bot) {
 		console.log('Message by another bot. Not playing that game, buddy …');
+		return;
+	} else if (message.system) {
+		console.log('Message by the system. Couldn\'t care less …');
 		return;
 	}
 
