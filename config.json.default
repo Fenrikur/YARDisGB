@@ -3,7 +3,8 @@
     "token": "",
     "games": {
         "word_morphing": {
-            "allowSameUser": true
+            "allowSameUser": false,
+			"wordHistoryLength": 10
         }
     }
 }

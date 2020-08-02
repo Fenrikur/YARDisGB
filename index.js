@@ -4,7 +4,7 @@ const { prefix, token, games } = require('./config.json');
 const Discord = require('discord.js');
 const client = new Discord.Client();
 
-const enabledChannels = new Discord.Collection();
+const gameSessions = new Discord.Collection();
 
 client.once('ready', () => {
 	client.user.setStatus('online');
@@ -33,21 +33,27 @@ client.on('message', message => {
 		// const commandArgs = input.join(' ');
 
 		if (command === 'start' && message.guild) {
-			if (!enabledChannels.has(message.channel.id)) {
+			if (!gameSessions.has(message.channel.id)) {
 				console.log(`Starting the game in channel ${message.channel.name} (${message.channel.id})`);
-				enabledChannels.set(message.channel.id, null);
+				gameSessions.set(message.channel.id, {
+					previousMessage: null,
+					wordHistory: [],
+				});
 				message.react('🎬');
 			} else {
 				message.reply(`There is already a game running in this channel. Please stop it first with \`${prefix}stop\`.`);
 			}
 		} else if (command === 'restart' && message.guild) {
 			console.log(`Restarting the game in channel ${message.channel.name} (${message.channel.id})`);
-			enabledChannels.set(message.channel.id, null);
+			gameSessions.set(message.channel.id, {
+				previousMessage: null,
+				wordHistory: [],
+			});
 			message.react('🔄');
 		} else if (command === 'stop' && message.guild) {
-			if (enabledChannels.has(message.channel.id)) {
+			if (gameSessions.has(message.channel.id)) {
 				console.log(`Ending the game in channel ${message.channel.name} (${message.channel.id})`);
-				enabledChannels.delete(message.channel.id);
+				gameSessions.delete(message.channel.id);
 				message.react('🏁');
 			} else {
 				message.reply(`The game is currently not running in this channel. Try starting it with \`${prefix}start\``);
@@ -55,8 +61,9 @@ client.on('message', message => {
 		} else {
 			message.reply(`Unknown command \`${prefix}${command}\`.\nTry \`!start\`, \`!restart\` or \`!stop\`.`);
 		}
-	} else if (enabledChannels.has(message.channel.id)) {
-		const previousMessage = enabledChannels.get(message.channel.id);
+	} else if (gameSessions.has(message.channel.id)) {
+		const gameSession = gameSessions.get(message.channel.id);
+		const previousMessage = gameSession.previousMessage;
 		const previousMessageLength = previousMessage ? [...previousMessage.content].length : 0;
 		const messageLength = [...message.content].length;
 		let errorMessage = null;
@@ -72,6 +79,8 @@ client.on('message', message => {
 			errorMessage = 'don\'t play with yourself!';
 		} else if (message.content === previousMessage.content) {
 			errorMessage = 'simply repeating the previous word is cheating!';
+		} else if (gameSession.wordHistory.indexOf(message.content) >= 0) {
+			errorMessage = 'simply repeating a recently used word is cheating!';
 		} else if (messageLength > previousMessage.content.length + 1) {
 			errorMessage = 'your new word has more than one character more than the previous word!';
 		} else if (messageLength < previousMessage.content.length - 1) {
@@ -103,17 +112,23 @@ client.on('message', message => {
 			message.reply(`${errorMessage} The current word is still: **${previousMessage.content}**`);
 		} else {
 			message.react('✅');
-			enabledChannels.set(message.channel.id, {
+			gameSession.wordHistory.push(message.content);
+			if (gameSession.wordHistory.length > games.word_morphing.wordHistoryLength) {
+				gameSession.wordHistory.shift();
+			}
+			gameSession.previousMessage = {
 				id: message.id,
 				content: `${message.content}`,
 				author: message.author,
-			});
+			};
+			console.log(gameSession);
 		}
 	}
 });
 
 client.on('messageUpdate', (oldMessage, newMessage) => {
-	const previousMessage = enabledChannels.get(oldMessage.channel.id);
+	const gameSession = gameSessions.get(oldMessage.channel.id);
+	const previousMessage = gameSession.previousMessage;
 	if (previousMessage && oldMessage.id === previousMessage.id && oldMessage.content === previousMessage.content) {
 		newMessage.react('💢');
 		newMessage.reply(`editing your previous word after the fact is unfair! The current word is still: **${previousMessage.content}**`);
@@ -121,7 +136,8 @@ client.on('messageUpdate', (oldMessage, newMessage) => {
 });
 
 client.on('messageDelete', message => {
-	const previousMessage = enabledChannels.get(message.channel.id);
+	const gameSession = gameSessions.get(message.channel.id);
+	const previousMessage = gameSession.previousMessage;
 	if (previousMessage && message.id === previousMessage.id) {
 		message.reply(`deleting your previous word after the fact is unfair! The current word is still: **${previousMessage.content}**`);
 	}
