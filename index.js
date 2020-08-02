@@ -59,6 +59,10 @@ client.on('message', message => {
 			} else {
 				message.reply(`The game is currently not running in this channel. Try starting it with \`${prefix}start\``);
 			}
+		} else if (command === 'rules') {
+			if (gameSessions.has(message.channel.id)) {
+				message.reply('I will gladly explain the rules of the game Word Morphing to you:\n\n - The previous accepted word may be morphed in one of three ways:\n\t- By adding a new letter,\n\t- by removing a letter or\n\t- by changing a letter.\n - Each new word must be a real word.\n - Recently used words may not be reused.\n\nExample:\n1) start\n2) tart\n3) cart');
+			}
 		} else {
 			message.reply(`Unknown command \`${prefix}${command}\`.\nTry \`!start\`, \`!restart\` or \`!stop\`.`);
 		}
