@@ -67,7 +67,11 @@ client.on('message', message => {
 		const previousMessage = enabledChannels.get(message.channel.id);
 		if (previousMessage === null) {
 			message.react('1️⃣');
-			enabledChannels.set(message.channel.id, message);
+			enabledChannels.set(message.channel.id, {
+				id: message.id,
+				content: `${message.content}`,
+				author: message.author,
+			});
 			console.log(`${message.channel.name} (${message.channel.id}): Set first word to '${message.content}'`);
 			return;
 		}
@@ -115,9 +119,28 @@ client.on('message', message => {
 				message.reply(errorMessages.join('\n'));
 			} else {
 				message.react('☑️');
-				enabledChannels.set(message.channel.id, message);
+				enabledChannels.set(message.channel.id, {
+					id: message.id,
+					content: `${message.content}`,
+					author: message.author,
+				});
 			}
 		}
+	}
+});
+
+client.on('messageUpdate', (oldMessage, newMessage) => {
+	const previousMessage = enabledChannels.get(oldMessage.channel.id);
+	if (previousMessage && oldMessage.id === previousMessage.id) {
+		newMessage.react('💢');
+		newMessage.reply(`editing your previous word after the fact is unfair. The current word is still: **${previousMessage.content}**`);
+	}
+});
+
+client.on('messageDelete', message => {
+	const previousMessage = enabledChannels.get(message.channel.id);
+	if (previousMessage && message.id === previousMessage.id) {
+		message.reply(`deleting your previous word after the fact is unfair. The current word is still: **${previousMessage.content}**`);
 	}
 });
 
