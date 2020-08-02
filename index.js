@@ -10,23 +10,36 @@ client.once('ready', () => {
 	console.log('Ready!');
 });
 
-client.login(token);
-
 client.on('message', message => {
 	if (message.author.id === client.user.id) {
-		console.log('Message by myself. Let\'s not go there again ...');
+		console.log('Message by myself. Let\'s not go there again …');
+		return;
+	} else if (message.author.bot) {
+		console.log('Message by another bot. Not playing that game, buddy …');
 		return;
 	}
 
-	if (message.content.startsWith(`${prefix}play`)) {
-		if (!enabledChannels.has(message.channel.id)) {
-			console.log(`Starting the game in channel ${message.channel.name} (${message.channel.id})`);
-			enabledChannels.set(message.channel.id, null);
-			message.react('🎬');
-		} else {
-			console.log(`Ending the game in channel ${message.channel.name} (${message.channel.id})`);
-			enabledChannels.delete(message.channel.id);
-			message.react('🏁');
+	if (message.content.startsWith(prefix)) {
+		const input = message.content.slice(prefix.length).trim().split(' ');
+		const command = input.shift();
+		// const commandArgs = input.join(' ');
+
+		if (command === 'play' && message.guild) {
+			if (!enabledChannels.has(message.channel.id)) {
+				console.log(`Starting the game in channel ${message.channel.name} (${message.channel.id})`);
+				enabledChannels.set(message.channel.id, null);
+				message.react('🎬');
+			} else {
+				message.reply(`There is already a game running in this channel. Please stop it first with '${prefix}stop'.`);
+			}
+		} else if (command === 'stop' && message.guild) {
+			if (enabledChannels.has(message.channel.id)) {
+				console.log(`Ending the game in channel ${message.channel.name} (${message.channel.id})`);
+				enabledChannels.delete(message.channel.id);
+				message.react('🏁');
+			} else {
+				message.reply(`Nothing to stop in this channel. Try starting one with '${prefix}play'`);
+			}
 		}
 	} else if (enabledChannels.has(message.channel.id)) {
 		if (/\s/g.test(message.content)) {
@@ -56,6 +69,9 @@ client.on('message', message => {
 		if (1 === 2 && message.author === previousMessage.author) {
 			message.react('❌');
 			message.reply('Don\'t play with yourself!');
+		} else if (message.content === previousMessage.content) {
+			message.react('❌');
+			message.reply('Simply repeating the previous word is cheating! :P');
 		} else {
 			const errorMessages = [];
 			if (messageLength > previousMessage.content.length + 1) {
@@ -94,3 +110,5 @@ client.on('message', message => {
 		}
 	}
 });
+
+client.login(token);
