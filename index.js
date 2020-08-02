@@ -61,7 +61,7 @@ client.on('message', message => {
 			}
 		} else if (command === 'rules') {
 			if (gameSessions.has(message.channel.id)) {
-				message.reply('I will gladly explain the rules of the game Word Morphing to you:\n\n - The previous accepted word may be morphed in one of three ways:\n\t- By adding a new letter,\n\t- by removing a letter or\n\t- by changing a letter.\n - Each new word must be a real word.\n - Recently used words may not be reused.\n\nExample:\n1) start\n2) tart\n3) cart');
+				message.reply(`I will gladly explain the rules of the game Word Morphing to you:\n\n - The previous accepted word may be morphed in one of three ways:\n\t- By adding a new letter,\n\t- by removing a letter or\n\t- by changing a letter.\n - Each new word must be a real word.\n - Recently used words may not be reused.${games.wordMorphing.caseInsensitive ? '\n - Changes in case will be ignored.' : '\n - Changes will be case-sensitive.'}\n\nExample:\n1) start\n2) tart\n3) cart`);
 			}
 		} else {
 			message.reply(`Unknown command \`${prefix}${command}\`.\nTry \`!start\`, \`!restart\` or \`!stop\`.`);
@@ -69,26 +69,28 @@ client.on('message', message => {
 	} else if (gameSessions.has(message.channel.id)) {
 		const gameSession = gameSessions.get(message.channel.id);
 		const previousMessage = gameSession.previousMessage;
-		const previousMessageLength = previousMessage ? [...previousMessage.content].length : 0;
-		const messageLength = [...message.content].length;
+		const previousMessageContent = previousMessage ? games.wordMorphing.caseInsensitive ? previousMessage.content.toLowerCase() : previousMessage.content : '';
+		const previousMessageLength = previousMessage ? [...previousMessageContent].length : 0;
+		const messageContent = games.wordMorphing.caseInsensitive ? message.content.toLowerCase() : message.content;
+		const messageLength = [...messageContent].length;
 		let errorMessage = null;
 
 		if (previousMessage === null) {
 			message.react('1️⃣');
 			console.log(`${message.channel.name} (${message.channel.id}): Set first word to '${message.content}'`);
-		} else if (/\s/g.test(message.content)) {
+		} else if (/\s/g.test(messageContent)) {
 			errorMessage = 'only contiguous words are allowed in this game. Try again.';
-		} else if (UTF8_LETTERS_REGEX.test(message.content)) {
+		} else if (UTF8_LETTERS_REGEX.test(messageContent)) {
 			errorMessage = 'only letters are allowed. Try again.';
 		} else if (!games.wordMorphing.allowSameUser && message.author.id === previousMessage.author.id) {
 			errorMessage = 'don\'t play with yourself!';
-		} else if (message.content === previousMessage.content) {
+		} else if (messageContent === previousMessageContent) {
 			errorMessage = 'simply repeating the previous word is cheating!';
-		} else if (gameSession.wordHistory.indexOf(message.content) >= 0) {
+		} else if (gameSession.wordHistory.indexOf(messageContent) >= 0) {
 			errorMessage = 'simply repeating a recently used word is cheating!';
-		} else if (messageLength > previousMessage.content.length + 1) {
+		} else if (messageLength > previousMessageLength + 1) {
 			errorMessage = 'your new word has more than one character more than the previous word!';
-		} else if (messageLength < previousMessage.content.length - 1) {
+		} else if (messageLength < previousMessageLength - 1) {
 			errorMessage = 'your new word has more than one character less than the previous word!';
 		} else {
 			let diffCount = 0;
@@ -99,11 +101,11 @@ client.on('message', message => {
 				} else if (index >= messageLength && otherIndex >= previousMessageLength) {
 					break;
 				}
-				if (message.content.charCodeAt(index) !== previousMessage.content.charCodeAt(otherIndex)) {
+				if (messageContent.charCodeAt(index) !== previousMessageContent.charCodeAt(otherIndex)) {
 					diffCount++;
-					if (message.content.charCodeAt(index) === previousMessage.content.charCodeAt(otherIndex + 1)) {
+					if (messageContent.charCodeAt(index) === previousMessageContent.charCodeAt(otherIndex + 1)) {
 						otherIndex++;
-					} else if (message.content.charCodeAt(index + 1) === previousMessage.content.charCodeAt(otherIndex)) {
+					} else if (messageContent.charCodeAt(index + 1) === previousMessageContent.charCodeAt(otherIndex)) {
 						index++;
 					} else {
 						continue;
@@ -118,7 +120,7 @@ client.on('message', message => {
 		} else {
 			if (games.wordMorphing.dictionaryUrl && !errorMessage) {
 				message.react('🛃').then(reaction => {
-					https.get(`${games.wordMorphing.dictionaryUrl}`.replace('%s', message.content), (res) => {
+					https.get(`${games.wordMorphing.dictionaryUrl}`.replace('%s', messageContent), (res) => {
 						const { statusCode } = res;
 						reaction.remove().catch(reason => { console.log('Failed to remove reaction:', reason); });
 						console.log(res);
@@ -137,7 +139,7 @@ client.on('message', message => {
 							}
 						} else {
 							message.react('✅');
-							gameSession.wordHistory.push(message.content);
+							gameSession.wordHistory.push(messageContent);
 							if (gameSession.wordHistory.length > games.wordMorphing.wordHistoryLength) {
 								gameSession.wordHistory.shift();
 							}

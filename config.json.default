@@ -6,7 +6,8 @@
             "allowSameUser": false,
 			"wordHistoryLength": 10,
 			"dictionaryUrl": "https://en.wiktionary.org/wiki/%s",
-			"enforceDictionary": false
+			"enforceDictionary": false,
+			"caseInsensitive": true
         }
     }
 }
