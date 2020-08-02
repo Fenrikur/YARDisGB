@@ -8,7 +8,7 @@ const enabledChannels = new Discord.Collection();
 
 client.once('ready', () => {
 	client.user.setStatus('online');
-	client.user.setActivity('🌕🐺', { type: 'WATCHING' })
+	client.user.setActivity('🐺🐺🐺🌕', { type: 'WATCHING' })
 		.then(presence => console.log(`Activity set to ${presence.activities[0].name}`))
 		.catch(console.error);
 	console.log('Ready!');
@@ -52,52 +52,31 @@ client.on('message', message => {
 			message.reply(`Unknown command \`${prefix}${command}\`.\nTry \`!start\`, \`!restart\` or \`!stop\`.`);
 		}
 	} else if (enabledChannels.has(message.channel.id)) {
-		if (/\s/g.test(message.content)) {
-			message.react('❌');
-			message.reply('Only contiguous words are allowed in this game. Try again.');
-			return;
-		}
-
-		if (UTF8_LETTERS_REGEX.test(message.content)) {
-			message.react('❌');
-			message.reply('Only letters are allowed. Try again.');
-			return;
-		}
-
 		const previousMessage = enabledChannels.get(message.channel.id);
+		const previousMessageLength = previousMessage ? [...previousMessage.content].length : 0;
+		const messageLength = [...message.content].length;
+		let errorMessage = null;
+
 		if (previousMessage === null) {
 			message.react('1️⃣');
-			enabledChannels.set(message.channel.id, {
-				id: message.id,
-				content: `${message.content}`,
-				author: message.author,
-			});
 			console.log(`${message.channel.name} (${message.channel.id}): Set first word to '${message.content}'`);
-			return;
-		}
-
-		const previousMessageLength = [...previousMessage.content].length;
-		const messageLength = [...message.content].length;
-		console.log('message:', message.content, messageLength, 'previousMessage:', previousMessage.content, previousMessageLength);
-
-		if (!games.word_morphing.allowSameUser && message.author.id === previousMessage.author.id) {
-			message.react('❌');
-			message.reply('Don\'t play with yourself!');
+		} else if (/\s/g.test(message.content)) {
+			errorMessage = 'only contiguous words are allowed in this game. Try again.';
+		} else if (UTF8_LETTERS_REGEX.test(message.content)) {
+			errorMessage = 'only letters are allowed. Try again.';
+		} else if (!games.word_morphing.allowSameUser && message.author.id === previousMessage.author.id) {
+			errorMessage = 'don\'t play with yourself!';
 		} else if (message.content === previousMessage.content) {
-			message.react('❌');
-			message.reply('Simply repeating the previous word is cheating! :P');
+			errorMessage = 'simply repeating the previous word is cheating!';
+		} else if (messageLength > previousMessage.content.length + 1) {
+			errorMessage = 'your new word has more than one character more than the previous word!';
+		} else if (messageLength < previousMessage.content.length - 1) {
+			errorMessage = 'your new word has more than one character less than the previous word!';
 		} else {
-			const errorMessages = [];
-			if (messageLength > previousMessage.content.length + 1) {
-				errorMessages.push('Your new word has more than one character more than the previous word!');
-			} else if (messageLength < previousMessage.content.length - 1) {
-				errorMessages.push('Your new word has more than one character less than the previous word!');
-			}
-
 			let diffCount = 0;
 			for (let index = 0, otherIndex = 0;; index++, otherIndex++) {
 				if (diffCount > 1) {
-					errorMessages.push('Your new word differs from the previous word in more than one letter!');
+					errorMessage = 'your new word differs from the previous word in more than one letter!';
 					break;
 				} else if (index >= messageLength && otherIndex >= previousMessageLength) {
 					break;
@@ -113,34 +92,34 @@ client.on('message', message => {
 					}
 				}
 			}
+		}
 
-			if (errorMessages.length > 0) {
-				message.react('❌');
-				message.reply(errorMessages.join('\n'));
-			} else {
-				message.react('☑️');
-				enabledChannels.set(message.channel.id, {
-					id: message.id,
-					content: `${message.content}`,
-					author: message.author,
-				});
-			}
+		if (errorMessage) {
+			message.react('❌');
+			message.reply(`${errorMessage} The current word is still: **${previousMessage.content}**`);
+		} else {
+			message.react('✅');
+			enabledChannels.set(message.channel.id, {
+				id: message.id,
+				content: `${message.content}`,
+				author: message.author,
+			});
 		}
 	}
 });
 
 client.on('messageUpdate', (oldMessage, newMessage) => {
 	const previousMessage = enabledChannels.get(oldMessage.channel.id);
-	if (previousMessage && oldMessage.id === previousMessage.id) {
+	if (previousMessage && oldMessage.id === previousMessage.id && oldMessage.content === previousMessage.content) {
 		newMessage.react('💢');
-		newMessage.reply(`editing your previous word after the fact is unfair. The current word is still: **${previousMessage.content}**`);
+		newMessage.reply(`editing your previous word after the fact is unfair! The current word is still: **${previousMessage.content}**`);
 	}
 });
 
 client.on('messageDelete', message => {
 	const previousMessage = enabledChannels.get(message.channel.id);
 	if (previousMessage && message.id === previousMessage.id) {
-		message.reply(`deleting your previous word after the fact is unfair. The current word is still: **${previousMessage.content}**`);
+		message.reply(`deleting your previous word after the fact is unfair! The current word is still: **${previousMessage.content}**`);
 	}
 });
 
