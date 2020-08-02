@@ -2,9 +2,11 @@
 	"prefix": "!",
     "token": "",
     "games": {
-        "word_morphing": {
+        "wordMorphing": {
             "allowSameUser": false,
-			"wordHistoryLength": 10
+			"wordHistoryLength": 10,
+			"dictionaryUrl": "https://en.wiktionary.org/wiki/%s",
+			"enforceDictionary": false
         }
     }
 }
