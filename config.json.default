@@ -1,13 +1,13 @@
 {
 	"prefix": "!",
-    "token": "",
-    "games": {
-        "wordMorphing": {
-            "allowSameUser": false,
+	"token": "",
+	"gameSettings": {
+		"wordMorphing": {
+			"allowSameUser": false,
 			"wordHistoryLength": 10,
 			"dictionaryUrl": "https://en.wiktionary.org/wiki/%s",
 			"enforceDictionary": false,
 			"caseInsensitive": true
-        }
-    }
+		}
+	}
 }
