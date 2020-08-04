@@ -1,5 +1,5 @@
 const { UTF8_LETTERS_REGEX } = require('../util');
-const https = require('https');
+const axios = require('axios').default;
 
 module.exports = {
 	name: 'Word Morphing',
@@ -12,7 +12,7 @@ module.exports = {
 			wordHistory: [],
 		};
 	},
-	onMessage: function(settings, data, message) {
+	onMessage: async function(settings, data, message) {
 		const previousMessage = data.previousMessage;
 		const previousMessageContent = previousMessage ? settings.caseInsensitive ? previousMessage.content.toLowerCase() : previousMessage.content : '';
 		const previousMessageLength = previousMessage ? [...previousMessageContent].length : 0;
@@ -34,9 +34,9 @@ module.exports = {
 		} else if (data.wordHistory.indexOf(messageContent) >= 0) {
 			errorMessage = 'simply repeating a recently used word is cheating!';
 		} else if (messageLength > previousMessageLength + 1) {
-			errorMessage = 'your new word has more than one character more than the previous word!';
+			errorMessage = `your new word **${messageContent}** has more than one character more than the previous word!`;
 		} else if (messageLength < previousMessageLength - 1) {
-			errorMessage = 'your new word has more than one character less than the previous word!';
+			errorMessage = `your new word **${messageContent}** has more than one character less than the previous word!`;
 		} else {
 			let shortMessage = messageContent;
 			let longMessage = previousMessageContent;
@@ -50,7 +50,7 @@ module.exports = {
 				const shortMessageChar = shortMessage.charCodeAt(shortIndex);
 				const longMessageChar = longMessage.charCodeAt(longIndex);
 				if (diffCount > 1) {
-					errorMessage = 'your new word differs from the previous word in more than one letter!';
+					errorMessage = `your new word **${messageContent}** differs from the previous word in more than one letter!`;
 					break;
 				} else if (!shortMessageChar && !longMessageChar) {
 					break;
@@ -70,43 +70,46 @@ module.exports = {
 			message.reply(`${errorMessage} The current word is still: **${previousMessage.content}**`);
 		} else {
 			if (settings.dictionaryUrl && !errorMessage) {
-				message.react('🛃').then(reaction => {
-					https.get(`${settings.dictionaryUrl}`.replace('%s', messageContent), (res) => {
-						const { statusCode } = res;
-						reaction.remove().catch(reason => { console.log('Failed to remove reaction:', reason); });
-						console.log(res);
-						if (statusCode !== 200) {
-							errorMessage = `we failed to find the word **${message.content}** in the dictionary.`;
-							if (settings.enforceDictionary) {
-								message.react('❌');
-								if (previousMessage) {
-									message.reply(`${errorMessage} The current word is still: **${previousMessage.content}**`);
-								} else {
-									message.reply(`${errorMessage} The next valid word will be the starting point of the game.`);
-								}
-							} else {
-								message.react('🚮');
-								message.reply(`${errorMessage}\n(… but you're still allowed to use it.)`);
-							}
-						} else {
-							message.react('✅');
-							data.wordHistory.push(messageContent);
-							if (data.wordHistory.length > settings.wordHistoryLength) {
-								data.wordHistory.shift();
-							}
-							data.previousMessage = {
-								id: message.id,
-								content: `${message.content}`,
-								author: message.author,
-							};
-							console.log(data);
+				const reaction = await message.react('🛃');
+				try {
+					const response = await axios.get(`${settings.dictionaryUrl}`.replace('%s', messageContent));
+					console.log(response);
+					if (settings.enforceDictionary) {
+						message.react('✅');
+						data.wordHistory.push(messageContent);
+						if (data.wordHistory.length > settings.wordHistoryLength) {
+							data.wordHistory.shift();
 						}
-					});
-				});
+						data.previousMessage = {
+							id: message.id,
+							content: `${message.content}`,
+							author: message.author,
+						};
+						console.log(data);
+					} else {
+						message.react('📖');
+					}
+				} catch (error) {
+					console.warn(error);
+					errorMessage = `we failed to find the word **${message.content}** in the dictionary.`;
+					if (settings.enforceDictionary) {
+						message.react('❌');
+						if (previousMessage) {
+							message.reply(`${errorMessage} The current word is still: **${previousMessage.content}**`);
+						} else {
+							message.reply(`${errorMessage} The next valid word will be the starting point of the game.`);
+						}
+					} else {
+						message.react('🚮');
+						message.reply(`${errorMessage}\n(… but you're still allowed to use it.)`);
+					}
+				} finally {
+					reaction.remove().catch(reason => { console.log('Failed to remove reaction:', reason); });
+				}
 			}
 
 			if (!settings.enforceDictionary) {
-				message.react('☑️');
+				message.react('✅');
 				data.wordHistory.push(message.content);
 				if (data.wordHistory.length > settings.wordHistoryLength) {
 					data.wordHistory.shift();

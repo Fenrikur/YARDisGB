@@ -1,6 +1,7 @@
 const { prefix, token, gameSettings } = require('./config.json');
 const fs = require('fs');
 const Discord = require('discord.js');
+const AsyncLock = require('async-lock');
 
 function loadGames(gamesDir) {
 	if (!gamesDir.endsWith('/')) {
@@ -23,6 +24,7 @@ const client = new Discord.Client();
 
 const games = loadGames('./games');
 const gameSessions = new Discord.Collection();
+const gameSessionLocks = new AsyncLock();
 
 client.once('ready', () => {
 	client.user.setStatus('online');
@@ -32,7 +34,7 @@ client.once('ready', () => {
 	console.log('Ready!');
 });
 
-client.on('message', message => {
+client.on('message', async message => {
 	console.log(message);
 	if (message.author.id === client.user.id) {
 		console.log('Message by myself. Let\'s not go there again …');
@@ -54,7 +56,7 @@ client.on('message', message => {
 		const gameId = commandArgs.replace(/[^A-Za-z0-9]/g, '');
 
 		if (command === 'help' && message.guild) {
-			message.reply(`the following commands are available:${}`);
+			message.reply(`the following commands are available:${prefix}...`);
 		} else if (command === 'list' && message.guild) {
 			message.reply(`the following games are currently available:\n${games.reduce((listString, listGame, listGameId) => { return `${listString}\t- ${listGame.name} (\`${listGameId}\`)\n`; }, '')}Use \`${prefix}start <gameId>\` to start one of them or \`${prefix}rules <gameId>\` to read its rules.`);
 		} else if (command === 'start' && message.guild) {
@@ -109,21 +111,27 @@ client.on('message', message => {
 			message.reply(`the command \`${prefix}${command}\` is unknown.\nTry \`${prefix}help\`, \`${prefix}list\`, ${gameSession ? `\`${prefix}rules\`, \`${prefix}restart\` or \`${prefix}stop\`` : `\`${prefix}start <gameId>\` or \`${prefix}rules <gameId>\``}.`);
 		}
 	} else if (gameSession) {
-		gameSession.game.onMessage(gameSession.settings, gameSession.data, message);
+		await gameSessionLocks.acquire(message.channel.id, async () => {
+			await gameSession.game.onMessage(gameSession.settings, gameSession.data, message);
+		});
 	}
 });
 
-client.on('messageUpdate', (oldMessage, newMessage) => {
+client.on('messageUpdate', async (oldMessage, newMessage) => {
 	const gameSession = gameSessions.get(oldMessage.channel.id);
 	if (gameSession) {
-		gameSession.game.onMessageUpdate(gameSession.settings, gameSession.data, oldMessage, newMessage);
+		await gameSessionLocks.acquire(oldMessage.channel.id, async () => {
+			await gameSession.game.onMessageUpdate(gameSession.settings, gameSession.data, oldMessage, newMessage);
+		});
 	}
 });
 
-client.on('messageDelete', message => {
+client.on('messageDelete', async message => {
 	const gameSession = gameSessions.get(message.channel.id);
 	if (gameSession) {
-		gameSession.game.onMessageUpdate(gameSession.settings, gameSession.data, message);
+		await gameSessionLocks.acquire(message.channel.id, async () => {
+			await gameSession.game.onMessageUpdate(gameSession.settings, gameSession.data, message);
+		});
 	}
 });
 

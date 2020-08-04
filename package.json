@@ -4,6 +4,8 @@
   "description": "A simple Discord bot",
   "main": "index.js",
   "dependencies": {
+    "async-lock": "^1.2.4",
+    "axios": "^0.19.2",
     "discord.js": "^12.2.0"
   },
   "devDependencies": {},
