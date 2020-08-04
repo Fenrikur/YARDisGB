@@ -51,17 +51,17 @@ client.on('message', async message => {
 		const commandArgs = input.join(' ');
 		const gameId = commandArgs.replace(/[^A-Za-z0-9]/g, '');
 
-		if (command === 'help' && message.guild) {
-			message.reply(`the following commands are available:${PREFIX}...`);
-		} else if (command === 'list' && message.guild) {
-			message.reply(`the following games are currently available:\n${client.games.reduce((listString, listGame, listGameId) => { return `${listString}\t- ${listGame.name} (\`${listGameId}\`)\n`; }, '')}Use \`${PREFIX}start <gameId>\` to start one of them or \`${PREFIX}rules <gameId>\` to read its rules.`);
+		if (command === 'help' && !message.guild) {
+			message.author.send(`The following commands are available:${PREFIX}...`);
+		} else if (command === 'list' && !message.guild) {
+			message.author.send(`The following games are currently available:\n${client.games.reduce((listString, listGame, listGameId) => { return `${listString}\t- ${listGame.name} (\`${listGameId}\`)\n`; }, '')}Use \`${PREFIX}start <gameId>\` in the respective channel to start one of them there or \`${PREFIX}rules <gameId>\` in here to read its rules.`);
 		} else if (command === 'start' && message.guild) {
 			if (gameSession) {
-				message.reply(`there is already a game of ${gameSession.game.name} running in this channel. Please stop it first with \`${PREFIX}stop\`.`);
+				message.author.send(`There is already a game of ${gameSession.game.name} running in #${message.channel.name} on ${message.guild.name}. Please stop it first by sending \`${PREFIX}stop\` to that channel.`);
 			} else if (!gameId) {
-				message.reply(`you forgot to add the name of the game you wish to start. Use \`${PREFIX}list\` to retrieve a list of available games.`);
+				message.author.send(`You forgot to add the name of the game you wish to start. Use \`${PREFIX}list\` in here to retrieve a list of available games.`);
 			} else if (!client.games.has(gameId)) {
-				message.reply(`there is no game **${gameId}**. Use \`${PREFIX}list\` to retrieve a list of available games.`);
+				message.author.send(`There is no game **${gameId}**. Use \`${PREFIX}list\` in here to retrieve a list of available games.`);
 			} else {
 				const game = client.games.get(gameId);
 				console.log(`Starting the game ${game.name} (${gameId}) in channel ${message.channel.name} (${message.channel.id})`);
@@ -72,7 +72,7 @@ client.on('message', async message => {
 					settings: client.gameSettings[gameId],
 				});
 				message.react('🎬');
-				message.reply(`let's play ${game.name}! Use \`${PREFIX}rules\` if you want to know the rules.`);
+				message.channel.send(`Let's play ${game.name}! Use \`${PREFIX}rules\` if you want to know the rules.`);
 			}
 		} else if (command === 'restart' && message.guild) {
 			if (gameSession) {
@@ -80,7 +80,7 @@ client.on('message', async message => {
 				gameSession.data = gameSession.game.start(client.globalSettings);
 				message.react('🔄');
 			} else {
-				message.reply(`there is currently no game running in this channel. Try starting one with \`${PREFIX}start <gameId>\``);
+				message.author.send(`There is currently no game running in #${message.channel.name} on ${message.guild.name}. Try starting one there with \`${PREFIX}start <gameId>\``);
 			}
 		} else if (command === 'stop' && message.guild) {
 			if (gameSession) {
@@ -88,23 +88,36 @@ client.on('message', async message => {
 				client.gameSessions.delete(message.channel.id);
 				message.react('🏁');
 			} else {
-				message.reply(`there is currently no game running in this channel. Try starting one with \`${PREFIX}start <gameId>\``);
+				message.author.send(`There is currently no game running in #${message.channel.name} on ${message.guild.name}. Try starting one there with \`${PREFIX}start <gameId>\``);
 			}
-		} else if (command === 'rules') {
+		} else if (command === 'crules' && message.guild) {
 			if (gameSession) {
-				message.reply(`I will gladly explain the rules of the game ${gameSession.game.name} to you:\n\n ${gameSession.game.rules(client.globalSettings, gameSession.settings)}`);
+				message.channel.send(`The rules of the game ${gameSession.game.name} are as follows:\n\n ${gameSession.game.rules(client.globalSettings, gameSession.settings)}`);
 			} else if (gameId) {
 				const game = client.games.get(gameId);
 				if (game) {
-					message.reply(`I will gladly explain the rules of the game ${game.name} to you:\n\n ${game.rules(client.globalSettings, client.gameSettings[gameId])}`);
+					message.channel.send(`The rules of the game ${game.name} are as follows:\n\n ${game.rules(client.globalSettings, client.gameSettings[gameId])}`);
 				} else {
-					message.reply(`there is no game **${gameId}**. Use \`${PREFIX}list\` to retrieve a list of available games.`);
+					message.author.send(`There is no game **${gameId}**. Use \`${PREFIX}list\` in here to retrieve a list of available games.`);
 				}
+			}
+		} else if (command === 'rules') {
+			if (gameSession) {
+				message.author.send(`I will gladly explain the rules of the game ${gameSession.game.name} in #${message.channel.name} on ${message.guild.name} to you:\n\n ${gameSession.game.rules(client.globalSettings, gameSession.settings)}`);
+			} else if (gameId) {
+				const game = client.games.get(gameId);
+				if (game) {
+					message.author.send(`I will gladly explain the rules of the game ${game.name} to you:\n\n ${game.rules(client.globalSettings, client.gameSettings[gameId])}`);
+				} else {
+					message.author.send(`There is no game **${gameId}**. Use \`${PREFIX}list\` in here to retrieve a list of available games.`);
+				}
+			} else if(message.guild) {
+				message.author.send(`There is currently no game running in #${message.channel.name} on ${message.guild.name}. Try starting one in there with \`${PREFIX}start <gameId>\` or asking me here for the rules for a specific game with \`${PREFIX}rules <gameId>\`.`);
 			} else {
-				message.reply(`there is currently no game running in this channel. Try starting one with \`${PREFIX}start <gameId>\` or asking for the rules for a specific game with \`${PREFIX}rules <gameId>\`.`);
+				message.author.send(`You forgot to add the name of the game you wish to know the rules for. Use \`${PREFIX}list\` in here to retrieve a list of available games.`);
 			}
 		} else {
-			message.reply(`the command \`${PREFIX}${command}\` is unknown.\nTry \`${PREFIX}help\`, \`${PREFIX}list\`, ${gameSession ? `\`${PREFIX}rules\`, \`${PREFIX}restart\` or \`${PREFIX}stop\`` : `\`${PREFIX}start <gameId>\` or \`${PREFIX}rules <gameId>\``}.`);
+			message.author.send(`The command \`${PREFIX}${command}\` is unknown.\nTry \`${PREFIX}help\` in here for a list of available commands.`);
 		}
 	} else if (gameSession) {
 		await client.gameSessionLocks.acquire(message.channel.id, async () => {
