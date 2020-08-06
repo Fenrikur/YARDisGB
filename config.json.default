@@ -1,6 +1,13 @@
 {
 	"prefix": "!",
 	"token": "",
+	"globalSettings": {
+		"silentMode": true,
+		"debugMode": false,
+		"isPrivilegedPermission": "ADMINISTRATOR",
+		"unprivilegedRestartVotes": 10,
+		"unprivilegedRestartVoteDurationSeconds": 180
+	},
 	"gameSettings": {
 		"wordMorphing": {
 			"allowSameUser": false,
