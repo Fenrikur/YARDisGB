@@ -5,7 +5,7 @@ const AsyncLock = require('async-lock');
 
 const client = new Discord.Client();
 
-client.loadGames = function() {
+client.loadGames = function () {
 	const gamesDir = client.globalSettings.gamesDir;
 
 	const games = new Discord.Collection();
@@ -19,7 +19,7 @@ client.loadGames = function() {
 	this.games = games;
 };
 
-client.restoreGameSessions = function() {
+client.restoreGameSessions = function () {
 	const sessionsDir = client.globalSettings.sessionsDir;
 
 	if (!fs.existsSync(sessionsDir)) {
@@ -45,11 +45,11 @@ client.restoreGameSessions = function() {
 	this.gameSessions = gameSessions;
 };
 
-client.storeGameSession = function(gameSession) {
+client.storeGameSession = function (gameSession) {
 	fs.writeFileSync(`${client.globalSettings.sessionsDir}/${gameSession.id}.json`, JSON.stringify(gameSession));
 };
 
-client.startGame = function(gameId, sessionId) {
+client.startGame = function (gameId, sessionId) {
 	const game = client.games.get(gameId);
 	const gameSession = {
 		id: sessionId,
@@ -66,12 +66,12 @@ client.startGame = function(gameId, sessionId) {
 	return gameSession;
 };
 
-client.stopGame = function(gameSession) {
+client.stopGame = function (gameSession) {
 	client.gameSessions.delete(gameSession);
 	fs.unlinkSync(`${client.globalSettings.sessionsDir}/${gameSession.id}.json`);
 };
 
-client.restartGame = async function(gameSession) {
+client.restartGame = async function (gameSession) {
 	await client.clearRestartVote(gameSession);
 	await client.gameSessionLocks.acquire(gameSession.id, async () => {
 		gameSession.data = gameSession.game.start(client.globalSettings);
@@ -79,7 +79,7 @@ client.restartGame = async function(gameSession) {
 	});
 };
 
-client.startRestartVote = async function(gameSession, message) {
+client.startRestartVote = async function (gameSession, message) {
 	await client.gameSessionLocks.acquire(gameSession.id, async () => {
 		const voteMessage = await message.reply(`your request to restart the game requires ${client.globalSettings.unprivilegedRestartVotes} votes to succeed. Everybody who wishes to support your request can vote by reacting to this message with 👍. Voting will be open for the next ${Math.round(client.globalSettings.unprivilegedRestartVoteDurationSeconds / 60)} minutes and ${Math.round(client.globalSettings.unprivilegedRestartVoteDurationSeconds % 60)} seconds.`);
 		voteMessage.react('👍');
@@ -92,7 +92,7 @@ client.startRestartVote = async function(gameSession, message) {
 	});
 };
 
-client.clearRestartVote = async function(gameSession) {
+client.clearRestartVote = async function (gameSession) {
 	await client.gameSessionLocks.acquire(gameSession.id, async () => {
 		clearTimeout(gameSession.restartVoteTimeout);
 		gameSession.restartVoteMessage = null;
@@ -200,6 +200,25 @@ client.on('message', async message => {
 			} else {
 				message.author.send(`You forgot to add the name of the game you wish to know the rules for. Use \`${PREFIX}list\` in here to retrieve a list of available games.`);
 			}
+		} else if (command === 'set' && message.guild && isPrivileged) {
+			const [ setting, value ] = commandArgs.split(' ', 2);
+			if (!gameSession) {
+				message.author.send(`There is currently no game running in #${message.channel.name} on ${message.guild.name}.You can only change settings if there is a game running.`);
+				message.react('🚫');
+			} else if (!commandArgs.match(/^[A-Za-z0-9\-_.]+ [^<>\\]+$/g) || gameSession.settings[setting] === undefined) {
+				message.author.send(`There is no setting of that name available in ${gameSession.game.name} (${gameSession.game.id}).`);
+				message.react('🚫');
+			} else if (!gameSession.game.validateSetting(setting, value)) {
+				message.author.send(`The value you provided for setting ${setting} for ${gameSession.game.name} (${gameSession.game.id}) in #${message.channel.name} on ${message.guild.name} is invalid.`);
+				message.react('🚫');
+			} else {
+				client.gameSessionLocks.acquire(gameSession.id, () => {
+					message.author.send(`Setting ${setting} to ${value} for ${gameSession.game.name} (${gameSession.game.id}) in #${message.channel.name} on ${message.guild.name}.`);
+					gameSession.settings[setting] = gameSession.game.parseSetting(setting, value);
+					client.storeGameSession(gameSession);
+					message.react('⚙️');
+				});
+			}
 		} else {
 			message.react('🚫');
 			message.author.send(`The command \`${PREFIX}${command}\` is unknown or may exclusively be available for use in a channel or via DM.\nTry \`${PREFIX}help\` in here for a list of available commands.`);
@@ -255,7 +274,7 @@ client.on('messageDelete', async message => {
 });
 
 
-(function() {
+(function () {
 	const { globalSettings, gameSettings, token: TOKEN } = require('./config.json');
 	client.globalSettings = globalSettings;
 	client.gameSettings = gameSettings;

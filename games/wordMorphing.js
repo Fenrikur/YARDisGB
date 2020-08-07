@@ -4,16 +4,16 @@ const axios = require('axios').default;
 module.exports = {
 	id: 'wordMorphing',
 	name: 'Word Morphing',
-	rules: function(globalSettings, gameSettings) {
+	rules: function (globalSettings, gameSettings) {
 		return `\t- The previous accepted word may be morphed in one of three ways:\n\t\t- By adding a new letter,\n\t\t- by removing a letter or\n\t\t- by changing a letter.\n\t- Each new word must be a real word.\n\t- Recently used words may not be reused.\n\t${gameSettings.caseInsensitive ? '- Changes in case will be ignored.' : '- Changes will be case-sensitive.'}\n\nExample:\n\t1) start\n\t2) tart\n\t3) cart`;
 	},
-	start: function() {
+	start: function () {
 		return {
 			previousMessage: null,
 			wordHistory: [],
 		};
 	},
-	onMessage: async function(globalSettings, gameSettings, data, message) {
+	onMessage: async function (globalSettings, gameSettings, data, message) {
 		const previousMessage = data.previousMessage;
 		const previousMessageContent = previousMessage ? gameSettings.caseInsensitive ? previousMessage.content.toLowerCase() : previousMessage.content : '';
 		const previousMessageLength = previousMessage ? [...previousMessageContent].length : 0;
@@ -47,7 +47,7 @@ module.exports = {
 			}
 
 			let diffCount = 0;
-			for (let shortIndex = 0, longIndex = 0;; shortIndex++, longIndex++) {
+			for (let shortIndex = 0, longIndex = 0; ; shortIndex++, longIndex++) {
 				const shortMessageChar = shortMessage.charCodeAt(shortIndex);
 				const longMessageChar = longMessage.charCodeAt(longIndex);
 				if (diffCount > 1) {
@@ -109,7 +109,7 @@ module.exports = {
 				}
 			}
 
-			if (!gameSettings.enforceDictionary) {
+			if (!gameSettings.dictionaryUrl || !gameSettings.enforceDictionary) {
 				message.react('✅');
 				data.wordHistory.push(message.content);
 				if (data.wordHistory.length > gameSettings.wordHistoryLength) {
@@ -123,17 +123,57 @@ module.exports = {
 			}
 		}
 	},
-	onMessageUpdate: function(globalSettings, settings, data, oldMessage, newMessage) {
+	onMessageUpdate: function (globalSettings, settings, data, oldMessage, newMessage) {
 		const previousMessage = data.previousMessage;
 		if (previousMessage && oldMessage.id === previousMessage.id && oldMessage.content === previousMessage.content) {
 			newMessage.react('💢');
 			newMessage.reply(`editing your previous word after the fact is unfair! The current word is still: **${previousMessage.content}**`);
 		}
 	},
-	onMessageDelete: function(globalSettings, settings, data, message) {
+	onMessageDelete: function (globalSettings, settings, data, message) {
 		const previousMessage = data.previousMessage;
 		if (previousMessage && message.id === previousMessage.id) {
 			message.reply(`deleting your previous word after the fact is unfair! The current word is still: **${previousMessage.content}**`);
+		}
+	},
+	validateSetting: function (setting, value) {
+		if (!setting || !value) {
+			return false;
+		}
+
+		switch (setting) {
+			case 'allowSameUser':
+				return value === 'true' || value === 'false';
+			case 'wordHistoryLength':
+				return value.match(/^[0-9]+$/) && value >= 0 && value <= 1000;
+			case 'dictionaryUrl':
+				return value.match(/^https:\/\/.*%s.*$/) || value === 'false';
+			case 'enforceDictionary':
+				return value === 'true' || value === 'false';
+			case 'caseInsensitive':
+				return value === 'true' || value === 'false';
+			default:
+				return false;
+		}
+	},
+	parseSetting: function (setting, value) {
+		if (!setting || !value || !this.validateSetting(setting, value)) {
+			return undefined;
+		}
+
+		switch (setting) {
+			case 'allowSameUser':
+				return value === 'true';
+			case 'wordHistoryLength':
+				return Number.parseInt(value);
+			case 'dictionaryUrl':
+				return value === 'false' ? false : value;
+			case 'enforceDictionary':
+				return value === 'true';
+			case 'caseInsensitive':
+				return value === 'true';
+			default:
+				return undefined;
 		}
 	},
 };
