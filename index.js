@@ -122,7 +122,7 @@ client.on('message', async message => {
 	}
 
 	const gameSession = client.gameSessions.get(message.channel.id);
-	const isPrivileged = !client.globalSettings.isPrivilegedRole || message.member.roles.cache.some(role => role.name === client.globalSettings.isPrivilegedRole);
+	const isPrivileged = !client.globalSettings.isPrivilegedRole || (message.member && message.member.roles.cache.some(role => role.name === client.globalSettings.isPrivilegedRole));
 
 	if (message.content.startsWith(PREFIX)) {
 		const input = message.content.slice(PREFIX.length).trim().split(' ');
@@ -130,9 +130,9 @@ client.on('message', async message => {
 		const commandArgs = input.join(' ');
 		const gameId = commandArgs.replace(/[^A-Za-z0-9]/g, '');
 
-		if (command === 'help' && !message.guild) {
-			message.author.send(`The following commands are available:${PREFIX}...`);
-		} else if (command === 'list' && !message.guild) {
+		if (command === 'help') {
+			message.author.send(`The following commands are available:\n\t- \`${PREFIX}help\`: (DM/Channel) Might provide more commands when used in a channel on a server where you have privileges.\n\t- \`${PREFIX}list\`: (DM) Receive a list of all available games.\n\t- \`${PREFIX}rules\`: (Channel) Get the rules for the game currently running in the channel.\n\t- \`${PREFIX}rules <gameId>\`: (DM) Get the rules for a specific game.${isPrivileged ? `\n\t- \`${PREFIX}start <gameId>\`: (Channel) Start a new game in a channel.\n\t- \`${PREFIX}stop\`: (Channel) Stop the game currently running in a channel.\n\t- \`${PREFIX}restart\`: (Channel) Restart the game currently running in a channel.\n\t- \`${PREFIX}crules\`: (Channel) Output the rules of the currently running game to the channel.` : `\n\t- \`${PREFIX}restart\`: (Channel) Trigger a vote to restart the game currently running in a channel.`}`);
+		} else if (command === 'list') {
 			message.author.send(`The following games are currently available:\n${client.games.reduce((listString, listGame, listGameId) => { return `${listString}\t- ${listGame.name} (\`${listGameId}\`)\n`; }, '')}Use \`${PREFIX}start <gameId>\` in the respective channel to start one of them there or \`${PREFIX}rules <gameId>\` in here to read its rules.`);
 		} else if (command === 'start' && message.guild && isPrivileged) {
 			if (gameSession) {
@@ -176,18 +176,18 @@ client.on('message', async message => {
 			}
 		} else if (command === 'crules' && message.guild && isPrivileged) {
 			if (gameSession) {
-				message.channel.send(`The rules of the game ${gameSession.game.name} are as follows:\n\n ${gameSession.game.rules(client.globalSettings, gameSession.settings)}`);
+				message.channel.send(`The rules of the game ${gameSession.game.name} are as follows:\n ${gameSession.game.rules(client.globalSettings, gameSession.settings)}`);
 			} else if (gameId) {
 				const game = client.games.get(gameId);
 				if (game) {
-					message.channel.send(`The rules of the game ${game.name} are as follows:\n\n ${game.rules(client.globalSettings, client.gameSettings[gameId])}`);
+					message.channel.send(`The rules of the game ${game.name} are as follows:\n ${game.rules(client.globalSettings, client.gameSettings[gameId])}`);
 				} else {
 					message.author.send(`There is no game **${gameId}**. Use \`${PREFIX}list\` in here to retrieve a list of available games.`);
 				}
 			}
 		} else if (command === 'rules') {
 			if (gameSession) {
-				message.author.send(`I will gladly explain the rules of the game ${gameSession.game.name} in #${message.channel.name} on ${message.guild.name} to you:\n\n ${gameSession.game.rules(client.globalSettings, gameSession.settings)}`);
+				message.author.send(`I will gladly explain the rules of the game ${gameSession.game.name} in #${message.channel.name} on ${message.guild.name} to you:\n ${gameSession.game.rules(client.globalSettings, gameSession.settings)}`);
 			} else if (gameId) {
 				const game = client.games.get(gameId);
 				if (game) {
@@ -202,7 +202,7 @@ client.on('message', async message => {
 			}
 		} else {
 			message.react('🚫');
-			message.author.send(`The command \`${PREFIX}${command}\` is unknown.\nTry \`${PREFIX}help\` in here for a list of available commands.`);
+			message.author.send(`The command \`${PREFIX}${command}\` is unknown or may exclusively be available for use in a channel or via DM.\nTry \`${PREFIX}help\` in here for a list of available commands.`);
 		}
 	} else if (gameSession) {
 		await client.gameSessionLocks.acquire(message.channel.id, async () => {
