@@ -2,6 +2,7 @@ const { UTF8_LETTERS_REGEX } = require('../util');
 const axios = require('axios').default;
 
 module.exports = {
+	id: 'wordMorphing',
 	name: 'Word Morphing',
 	rules: function(globalSettings, gameSettings) {
 		return `\t- The previous accepted word may be morphed in one of three ways:\n\t\t- By adding a new letter,\n\t\t- by removing a letter or\n\t\t- by changing a letter.\n\t- Each new word must be a real word.\n\t- Recently used words may not be reused.\n\t${gameSettings.caseInsensitive ? '- Changes in case will be ignored.' : '- Changes will be case-sensitive.'}\n\nExample:\n\t1) start\n\t2) tart\n\t3) cart`;
