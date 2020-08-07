@@ -5,15 +5,13 @@ const AsyncLock = require('async-lock');
 
 const client = new Discord.Client();
 
-client.loadGames = function(gamesDir) {
-	if (!gamesDir.endsWith('/')) {
-		gamesDir += '/';
-	}
+client.loadGames = function() {
+	const gamesDir = client.globalSettings.gamesDir;
 
 	const games = new Discord.Collection();
 	const gameFiles = fs.readdirSync(gamesDir).filter(file => file.endsWith('.js'));
 	for (const file of gameFiles) {
-		const game = require(`${gamesDir}${file}`);
+		const game = require(`${gamesDir}/${file}`);
 		games.set(game.id, game);
 		console.log('Added the game', game.name, 'with id', game.id, 'to the list of available games.');
 	}
@@ -21,10 +19,63 @@ client.loadGames = function(gamesDir) {
 	this.games = games;
 };
 
+client.restoreGameSessions = function() {
+	const sessionsDir = client.globalSettings.sessionsDir;
+
+	if (!fs.existsSync(sessionsDir)) {
+		console.log(`Sessions directory ${sessionsDir} was missing, so nothing to restore apart from the directory itself.`);
+		fs.mkdirSync(sessionsDir);
+		return;
+	}
+
+	const gameSessions = new Discord.Collection();
+	const sessionFiles = fs.readdirSync(sessionsDir).filter(file => file.endsWith('.json'));
+	for (const file of sessionFiles) {
+		const gameSession = require(`${sessionsDir}/${file}`);
+		const game = client.games.get(gameSession.game.id);
+		if (game) {
+			gameSession.game = game;
+			gameSessions.set(gameSession.id, gameSession);
+			console.log(`Restored session ${gameSession.id} of the game ${game.name} with id ${game.id}.`);
+		} else {
+			console.log(`Failed to restore session ${gameSession.id} of the game ${gameSession.game.name} with id ${gameSession.game.id} as the game itself is missing.`);
+		}
+	}
+
+	this.gameSessions = gameSessions;
+};
+
+client.storeGameSession = function(gameSession) {
+	fs.writeFileSync(`${client.globalSettings.sessionsDir}/${gameSession.id}.json`, JSON.stringify(gameSession));
+};
+
+client.startGame = function(gameId, sessionId) {
+	const game = client.games.get(gameId);
+	const gameSession = {
+		id: sessionId,
+		game: game,
+		data: game.start(),
+		settings: client.gameSettings[gameId],
+		restartVoteCount: 0,
+		restartVoteMessage: null,
+		restartVoteTimeout: null,
+	};
+	client.gameSessions.set(gameSession.id, gameSession);
+	client.storeGameSession(gameSession);
+
+	return gameSession;
+};
+
+client.stopGame = function(gameSession) {
+	client.gameSessions.delete(gameSession);
+	fs.unlinkSync(`${client.globalSettings.sessionsDir}/${gameSession.id}.json`);
+};
+
 client.restartGame = async function(gameSession) {
 	await client.clearRestartVote(gameSession);
 	await client.gameSessionLocks.acquire(gameSession.id, async () => {
 		gameSession.data = gameSession.game.start(client.globalSettings);
+		client.storeGameSession(gameSession);
 	});
 };
 
@@ -47,22 +98,6 @@ client.clearRestartVote = async function(gameSession) {
 		gameSession.restartVoteMessage = null;
 		gameSession.restartVoteTimeout = null;
 	}, { domainReentrant: true });
-};
-
-client.startGame = function(gameId, sessionId) {
-	const game = client.games.get(gameId);
-	const gameSession = {
-		id: sessionId,
-		game: game,
-		data: game.start(),
-		settings: client.gameSettings[gameId],
-		restartVoteCount: 0,
-		restartVoteMessage: null,
-		restartVoteTimeout: null,
-	};
-	client.gameSessions.set(gameSession.id, gameSession);
-
-	return gameSession;
 };
 
 client.once('ready', () => {
@@ -134,7 +169,7 @@ client.on('message', async message => {
 		} else if (command === 'stop' && message.guild && isPrivileged) {
 			if (gameSession) {
 				console.log(`Ending the game ${gameSession.game.name} (${gameSession.game.id}) in channel ${message.channel.name} (${message.channel.id})`);
-				client.gameSessions.delete(message.channel.id);
+				client.stopGame(gameSession);
 				message.react('🏁');
 			} else {
 				message.author.send(`There is currently no game running in #${message.channel.name} on ${message.guild.name}. Try starting one there with \`${PREFIX}start <gameId>\``);
@@ -172,6 +207,7 @@ client.on('message', async message => {
 	} else if (gameSession) {
 		await client.gameSessionLocks.acquire(message.channel.id, async () => {
 			await gameSession.game.onMessage(client.globalSettings, gameSession.settings, gameSession.data, message);
+			client.storeGameSession(gameSession);
 		});
 	}
 });
@@ -203,6 +239,7 @@ client.on('messageUpdate', async (oldMessage, newMessage) => {
 	if (gameSession) {
 		await client.gameSessionLocks.acquire(oldMessage.channel.id, async () => {
 			await gameSession.game.onMessageUpdate(client.globalSettings, gameSession.settings, gameSession.data, oldMessage, newMessage);
+			client.storeGameSession(gameSession);
 		});
 	}
 });
@@ -212,6 +249,7 @@ client.on('messageDelete', async message => {
 	if (gameSession) {
 		await client.gameSessionLocks.acquire(message.channel.id, async () => {
 			await gameSession.game.onMessageUpdate(client.globalSettings, gameSession.settings, gameSession.data, message);
+			client.storeGameSession(gameSession);
 		});
 	}
 });
@@ -224,6 +262,7 @@ client.on('messageDelete', async message => {
 	client.gameSessions = new Discord.Collection();
 	client.gameSessionLocks = new AsyncLock();
 
-	client.loadGames('./games');
+	client.loadGames();
+	client.restoreGameSessions();
 	client.login(TOKEN);
 }());
