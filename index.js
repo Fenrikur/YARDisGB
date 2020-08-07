@@ -248,7 +248,7 @@ client.on('messageDelete', async message => {
 	const gameSession = client.gameSessions.get(message.channel.id);
 	if (gameSession) {
 		await client.gameSessionLocks.acquire(message.channel.id, async () => {
-			await gameSession.game.onMessageUpdate(client.globalSettings, gameSession.settings, gameSession.data, message);
+			await gameSession.game.onMessageDelete(client.globalSettings, gameSession.settings, gameSession.data, message);
 			client.storeGameSession(gameSession);
 		});
 	}
