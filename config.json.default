@@ -4,7 +4,6 @@
 	"globalSettings": {
 		"gamesDir": "./games",
 		"sessionsDir": "./sessions",
-		"silentMode": true,
 		"debugMode": false,
 		"isPrivilegedRole": "Game Master",
 		"unprivilegedRestartVotes": 10,
