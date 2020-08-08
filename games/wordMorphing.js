@@ -39,13 +39,13 @@ module.exports = {
 		const messageLength = [...messageContent].length;
 		let errorMessage = null;
 
-		if (previousMessage === null) {
-			message.react('1️⃣');
-			globalSettings.debugMode && console.log(`${message.channel.name} (${message.channel.id}): Set first word to '${message.content}'`);
-		} else if (/\s/g.test(messageContent)) {
+		if (/\s/g.test(messageContent)) {
 			errorMessage = 'only contiguous words are allowed in this game. Try again.';
 		} else if (UTF8_LETTERS_REGEX.test(messageContent)) {
 			errorMessage = 'only letters are allowed. Try again.';
+		} else if (previousMessage === null) {
+			message.react('1️⃣');
+			globalSettings.debugMode && console.log(`${message.channel.name} (${message.channel.id}): Set first word to '${message.content}'`);
 		} else if (!gameSettings.allowSameUser && message.author.id === previousMessage.author.id) {
 			errorMessage = 'don\'t play with yourself!';
 		} else if (messageContent === previousMessageContent) {
