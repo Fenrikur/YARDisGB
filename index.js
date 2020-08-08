@@ -219,6 +219,8 @@ client.on('message', async message => {
 					message.react('⚙️');
 				});
 			}
+		} else if (command === 'settings' && message.guild && isPrivileged && gameSession) {
+			message.author.send(`Settings for ${gameSession.game.name} (${gameSession.game.id}) in #${message.channel.name} on ${message.guild.name}:\n\`${JSON.stringify(gameSession.settings, undefined, 4)}\``);
 		} else {
 			message.react('🚫');
 			message.author.send(`The command \`${PREFIX}${command}\` is unknown or may exclusively be available for use in a channel or via DM.\nTry \`${PREFIX}help\` in here for a list of available commands.`);
