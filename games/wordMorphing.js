@@ -16,7 +16,6 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-const { UTF8_LETTERS_REGEX } = require('../util');
 const axios = require('axios').default;
 
 module.exports = {
@@ -41,7 +40,7 @@ module.exports = {
 
 		if (/\s/g.test(messageContent)) {
 			errorMessage = 'only contiguous words are allowed in this game. Try again.';
-		} else if (UTF8_LETTERS_REGEX.test(messageContent)) {
+		} else if (/^\p{General_Category=Letter}+$/gu.test(messageContent)) {
 			errorMessage = 'only letters are allowed. Try again.';
 		} else if (previousMessage === null) {
 			message.react('1️⃣');
