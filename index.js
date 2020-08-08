@@ -103,7 +103,11 @@ client.startRestartVote = async function (gameSession, message) {
 		voteMessage.react('👍');
 		gameSession.restartVoteMessage = voteMessage;
 		gameSession.restartVoteTimeout = setTimeout(async (voteGameSession) => {
-			await voteMessage.reactions.removeAll();
+			try {
+				await voteMessage.reactions.removeAll();
+			} catch (reason) {
+				client.globalSettings.debugMode && console.log('Failed to remove reactions:', reason);
+			}
 			voteMessage.react('🚫');
 			await client.clearRestartVote(voteGameSession);
 		}, client.getEffectiveSettingValue('unprivilegedRestartVoteDurationSeconds', gameSession) * 1000, gameSession);
@@ -318,7 +322,7 @@ client.on('messageReactionAdd', async (messageReaction) => {
 			console.log(`Restarting the game ${gameSession.game.name} (${gameSession.id}) in channel ${messageReaction.message.channel.name} (${messageReaction.message.channel.id}) on ${messageReaction.message.guild.name} (${messageReaction.message.guild.id}).`);
 			await gameSession.restartVoteMessage.react('🔄');
 			await client.restartGame(gameSession);
-			messageReaction.message.channel.send(`🔄 Restart vote successfull! Restarting the game ${gameSession.game.name} in 3, 2, 1 …`);
+			messageReaction.message.channel.send(`🔄 Restart vote successful! Restarting the game ${gameSession.game.name} in 3, 2, 1 …`);
 		}
 	}
 });
