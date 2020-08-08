@@ -40,7 +40,7 @@ module.exports = {
 
 		if (/\s/g.test(messageContent)) {
 			errorMessage = 'only contiguous words are allowed in this game. Try again.';
-		} else if (/^\p{General_Category=Letter}+$/gu.test(messageContent)) {
+		} else if (!/^\p{General_Category=Letter}+$/gu.test(messageContent)) {
 			errorMessage = 'only letters are allowed. Try again.';
 		} else if (previousMessage === null) {
 			message.react('1️⃣');
