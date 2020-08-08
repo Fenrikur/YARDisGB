@@ -32,7 +32,7 @@ module.exports = {
 			errorMessage = 'don\'t play with yourself!';
 		} else if (messageContent === previousMessageContent) {
 			errorMessage = 'simply repeating the previous word is cheating!';
-		} else if (data.wordHistory.indexOf(messageContent) >= 0) {
+		} else if (gameSettings.wordHistoryLength > 0 && data.wordHistory.indexOf(messageContent) >= Math.max(0, data.wordHistory.length - gameSettings.wordHistoryLength)) {
 			errorMessage = 'simply repeating a recently used word is cheating!';
 		} else if (messageLength > previousMessageLength + 1) {
 			errorMessage = `your new word **${messageContent}** has more than one character more than the previous word!`;
@@ -77,9 +77,9 @@ module.exports = {
 					globalSettings.debugMode && console.log(response);
 					if (gameSettings.enforceDictionary) {
 						message.react('✅');
-						data.wordHistory.push(messageContent);
+						gameSettings.wordHistoryLength > 0 && data.wordHistory.push(messageContent);
 						if (data.wordHistory.length > gameSettings.wordHistoryLength) {
-							data.wordHistory.shift();
+							data.wordHistory = data.wordHistory.slice(data.wordHistory.length - gameSettings.wordHistoryLength);
 						}
 						data.previousMessage = {
 							id: message.id,
@@ -111,9 +111,9 @@ module.exports = {
 
 			if (!gameSettings.dictionaryUrl || !gameSettings.enforceDictionary) {
 				message.react('✅');
-				data.wordHistory.push(message.content);
+				gameSettings.wordHistoryLength > 0 && data.wordHistory.push(message.content);
 				if (data.wordHistory.length > gameSettings.wordHistoryLength) {
-					data.wordHistory.shift();
+					data.wordHistory = data.wordHistory.slice(data.wordHistory.length - gameSettings.wordHistoryLength);
 				}
 				data.previousMessage = {
 					id: message.id,
