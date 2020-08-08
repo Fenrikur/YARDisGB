@@ -200,7 +200,7 @@ client.on('message', async message => {
 			}
 		} else if (command === 'restart' && message.guild) {
 			if (gameSession) {
-				if (isPrivileged || client.getEffectiveSettingValue('unprivilegedRestartVotes', gameSession) === 0) {
+				if (isPrivileged || (client.getEffectiveSettingValue('unprivilegedRestartVotes', gameSession) === 0 && client.getEffectiveSettingValue('unprivilegedRestartVoteDurationSeconds', gameSession) > 0)) {
 					console.log(`Restarting the game ${gameSession.game.name} (${gameSession.game.id}) in channel ${message.channel.name} (${message.channel.id}) on ${message.guild.name} (${message.guild.id}).`);
 					await message.react('🔄');
 					await client.restartGame(gameSession);
@@ -256,19 +256,26 @@ client.on('message', async message => {
 			if (!gameSession) {
 				message.author.send(`There is currently no game running in #${message.channel.name} on ${message.guild.name}.You can only change settings if there is a game running.`);
 				message.react('🚫');
-			} else if (!commandArgs.match(/^[A-Za-z0-9\-_.]+ [^<>\\]+$/g) || gameSession.settings[setting] === undefined) {
+			} else if (!commandArgs.match(/^[A-Za-z0-9\-_.]+ [^<>\\]+$/g) || (!client.isOverridableSetting(setting) && gameSession.settings[setting] === undefined)) {
 				message.author.send(`There is no setting of that name available in ${gameSession.game.name} (${gameSession.game.id}).`);
 				message.react('🚫');
-			} else if (!gameSession.game.validateSetting(setting, value)) {
-				message.author.send(`The value you provided for setting ${setting} for ${gameSession.game.name} (${gameSession.game.id}) in #${message.channel.name} on ${message.guild.name} is invalid.`);
-				message.react('🚫');
-			} else {
+			} else if (client.validateOverridableSetting(setting, value)) {
+				client.gameSessionLocks.acquire(gameSession.id, () => {
+					message.author.send(`Setting ${setting} to ${value} for ${gameSession.game.name} (${gameSession.game.id}) in #${message.channel.name} on ${message.guild.name}.`);
+					gameSession.settings[setting] = client.parseOverridableSetting(setting, value);
+					client.storeGameSession(gameSession);
+					message.react('⚙️');
+				});
+			} else if (gameSession.game.validateSetting(setting, value)) {
 				client.gameSessionLocks.acquire(gameSession.id, () => {
 					message.author.send(`Setting ${setting} to ${value} for ${gameSession.game.name} (${gameSession.game.id}) in #${message.channel.name} on ${message.guild.name}.`);
 					gameSession.settings[setting] = gameSession.game.parseSetting(setting, value);
 					client.storeGameSession(gameSession);
 					message.react('⚙️');
 				});
+			} else {
+				message.author.send(`The value you provided for setting ${setting} for ${gameSession.game.name} (${gameSession.game.id}) in #${message.channel.name} on ${message.guild.name} is invalid.`);
+				message.react('🚫');
 			}
 		} else if (command === 'settings' && message.guild && isPrivileged && gameSession) {
 			message.author.send(`Settings for ${gameSession.game.name} (${gameSession.game.id}) in #${message.channel.name} on ${message.guild.name}:\n\`${JSON.stringify(gameSession.settings, undefined, 4)}\``);
