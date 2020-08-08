@@ -201,7 +201,7 @@ client.on('message', async message => {
 		} else if (command === 'restart' && message.guild) {
 			if (gameSession) {
 				if (isPrivileged || (client.getEffectiveSettingValue('unprivilegedRestartVotes', gameSession) === 0 && client.getEffectiveSettingValue('unprivilegedRestartVoteDurationSeconds', gameSession) > 0)) {
-					console.log(`Restarting the game ${gameSession.game.name} (${gameSession.game.id}) in channel ${message.channel.name} (${message.channel.id}) on ${message.guild.name} (${message.guild.id}).`);
+					console.log(`Restarting the game ${gameSession.game.name} (\`${gameSession.game.id}\`) in channel ${message.channel.name} (${message.channel.id}) on ${message.guild.name} (${message.guild.id}).`);
 					await message.react('🔄');
 					await client.restartGame(gameSession);
 					message.channel.send(`🔄 Restarting the game ${gameSession.game.name} in 3, 2, 1 …`);
@@ -219,7 +219,7 @@ client.on('message', async message => {
 			}
 		} else if (command === 'stop' && message.guild && isPrivileged) {
 			if (gameSession) {
-				console.log(`Ending the game ${gameSession.game.name} (${gameSession.game.id}) in channel ${message.channel.name} (${message.channel.id})`);
+				console.log(`Ending the game ${gameSession.game.name} (\`${gameSession.game.id}\`) in channel ${message.channel.name} (${message.channel.id})`);
 				client.stopGame(gameSession);
 				message.react('🏁');
 			} else {
@@ -257,28 +257,28 @@ client.on('message', async message => {
 				message.author.send(`There is currently no game running in #${message.channel.name} on ${message.guild.name}.You can only change settings if there is a game running.`);
 				message.react('🚫');
 			} else if (!commandArgs.match(/^[A-Za-z0-9\-_.]+ [^<>\\]+$/g) || (!client.isOverridableSetting(setting) && gameSession.settings[setting] === undefined)) {
-				message.author.send(`There is no setting of that name available in ${gameSession.game.name} (${gameSession.game.id}).`);
+				message.author.send(`There is no setting of that name available in ${gameSession.game.name} (\`${gameSession.game.id}\`).`);
 				message.react('🚫');
 			} else if (client.validateOverridableSetting(setting, value)) {
 				client.gameSessionLocks.acquire(gameSession.id, () => {
-					message.author.send(`Setting ${setting} to ${value} for ${gameSession.game.name} (${gameSession.game.id}) in #${message.channel.name} on ${message.guild.name}.`);
+					message.author.send(`Setting ${setting} to ${value} for ${gameSession.game.name} (\`${gameSession.game.id}\`) in #${message.channel.name} on ${message.guild.name}.`);
 					gameSession.settings[setting] = client.parseOverridableSetting(setting, value);
 					client.storeGameSession(gameSession);
 					message.react('⚙️');
 				});
 			} else if (gameSession.game.validateSetting(setting, value)) {
 				client.gameSessionLocks.acquire(gameSession.id, () => {
-					message.author.send(`Setting ${setting} to ${value} for ${gameSession.game.name} (${gameSession.game.id}) in #${message.channel.name} on ${message.guild.name}.`);
+					message.author.send(`Setting ${setting} to ${value} for ${gameSession.game.name} (\`${gameSession.game.id}\`) in #${message.channel.name} on ${message.guild.name}.`);
 					gameSession.settings[setting] = gameSession.game.parseSetting(setting, value);
 					client.storeGameSession(gameSession);
 					message.react('⚙️');
 				});
 			} else {
-				message.author.send(`The value you provided for setting ${setting} for ${gameSession.game.name} (${gameSession.game.id}) in #${message.channel.name} on ${message.guild.name} is invalid.`);
+				message.author.send(`The value you provided for setting ${setting} for ${gameSession.game.name} (\`${gameSession.game.id}\`) in #${message.channel.name} on ${message.guild.name} is invalid.`);
 				message.react('🚫');
 			}
 		} else if (command === 'settings' && message.guild && isPrivileged && gameSession) {
-			message.author.send(`Settings for ${gameSession.game.name} (${gameSession.game.id}) in #${message.channel.name} on ${message.guild.name}:\n\`${JSON.stringify(gameSession.settings, undefined, 4)}\``);
+			message.author.send(`Settings for ${gameSession.game.name} (\`${gameSession.game.id}\`) in #${message.channel.name} on ${message.guild.name}:\n\`${JSON.stringify(gameSession.settings, undefined, 4)}\``);
 		} else {
 			message.react('🚫');
 			message.author.send(`The command \`${PREFIX}${command}\` is unknown or may exclusively be available for use in a channel or via DM.\nTry \`${PREFIX}help\` in here for a list of available commands.`);
