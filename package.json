@@ -1,7 +1,7 @@
 {
-  "name": "discord-bot",
+  "name": "yardisgb",
   "version": "0.0.1",
-  "description": "A simple Discord bot",
+  "description": "YARDisGB - Yet Another Random Discord Game Bot",
   "main": "index.js",
   "dependencies": {
     "async-lock": "^1.2.4",
@@ -17,6 +17,6 @@
     "discord",
     "bot"
   ],
-  "author": "Fenrikur",
-  "license": "ISC"
+  "author": "Dominik \"Fenrikur\" Schöner",
+  "license": "GPL-3.0"
 }
