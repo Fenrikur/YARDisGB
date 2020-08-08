@@ -81,14 +81,14 @@ client.restartGame = async function (gameSession) {
 
 client.startRestartVote = async function (gameSession, message) {
 	await client.gameSessionLocks.acquire(gameSession.id, async () => {
-		const voteMessage = await message.reply(`your request to restart the game requires ${client.globalSettings.unprivilegedRestartVotes} votes to succeed. Everybody who wishes to support your request can vote by reacting to this message with 👍. Voting will be open for the next ${Math.round(client.globalSettings.unprivilegedRestartVoteDurationSeconds / 60)} minutes and ${Math.round(client.globalSettings.unprivilegedRestartVoteDurationSeconds % 60)} seconds.`);
+		const voteMessage = await message.reply(`your request to restart the game requires ${client.getEffectiveSettingValue('unprivilegedRestartVotes', gameSession)} votes to succeed. Everybody who wishes to support your request can vote by reacting to this message with 👍. Voting will be open for the next ${Math.round(client.getEffectiveSettingValue('unprivilegedRestartVoteDurationSeconds', gameSession) / 60)} minutes and ${Math.round(client.getEffectiveSettingValue('unprivilegedRestartVoteDurationSeconds', gameSession) % 60)} seconds.`);
 		voteMessage.react('👍');
 		gameSession.restartVoteMessage = voteMessage;
 		gameSession.restartVoteTimeout = setTimeout(async (voteGameSession) => {
 			await voteMessage.reactions.removeAll();
 			voteMessage.react('🚫');
 			await client.clearRestartVote(voteGameSession);
-		}, client.globalSettings.unprivilegedRestartVoteDurationSeconds * 1000, gameSession);
+		}, client.getEffectiveSettingValue('unprivilegedRestartVoteDurationSeconds', gameSession) * 1000, gameSession);
 	});
 };
 
@@ -98,6 +98,55 @@ client.clearRestartVote = async function (gameSession) {
 		gameSession.restartVoteMessage = null;
 		gameSession.restartVoteTimeout = null;
 	}, { domainReentrant: true });
+};
+
+client.isOverridableSetting = function (setting) {
+	switch (setting) {
+		case 'unprivilegedRestartVotes':
+			return true;
+		case 'unprivilegedRestartVoteDurationSeconds':
+			return true;
+		default:
+			return false;
+	}
+};
+
+client.validateOverridableSetting = function (setting, value) {
+	if (!setting || !value) {
+		return false;
+	}
+
+	switch (setting) {
+		case 'unprivilegedRestartVotes':
+			return value.match(/^[0-9]+$/) && value >= 0 && value <= 1000;
+		case 'unprivilegedRestartVoteDurationSeconds':
+			return value.match(/^[0-9]+$/) && value >= 0;
+		default:
+			return false;
+	}
+};
+
+client.parseOverridableSetting = function (setting, value) {
+	if (!setting || !value || !client.validateOverridableSetting(setting, value)) {
+		return undefined;
+	}
+
+	switch (setting) {
+		case 'unprivilegedRestartVotes':
+			return Number.parseInt(value);
+		case 'unprivilegedRestartVoteDurationSeconds':
+			return Number.parseInt(value);
+		default:
+			return undefined;
+	}
+};
+
+client.getEffectiveSettingValue = function (setting, gameSession) {
+	if (!client.isOverridableSetting(setting) || gameSession.settings[setting] === undefined) {
+		return client.globalSettings[setting];
+	} else {
+		return gameSession.settings[setting];
+	}
 };
 
 client.once('ready', () => {
@@ -151,17 +200,19 @@ client.on('message', async message => {
 			}
 		} else if (command === 'restart' && message.guild) {
 			if (gameSession) {
-				if (isPrivileged) {
+				if (isPrivileged || client.getEffectiveSettingValue('unprivilegedRestartVotes', gameSession) === 0) {
 					console.log(`Restarting the game ${gameSession.game.name} (${gameSession.game.id}) in channel ${message.channel.name} (${message.channel.id}) on ${message.guild.name} (${message.guild.id}).`);
 					await message.react('🔄');
 					await client.restartGame(gameSession);
 					message.channel.send(`🔄 Restarting the game ${gameSession.game.name} in 3, 2, 1 …`);
-				} else if (client.globalSettings.unprivilegedRestartVotes) {
+				} else if (client.getEffectiveSettingValue('unprivilegedRestartVoteDurationSeconds', gameSession) > 0 && client.getEffectiveSettingValue('unprivilegedRestartVotes', gameSession) > 0) {
 					if (gameSession.restartVoteMessage === null) {
 						client.startRestartVote(gameSession, message);
 					} else {
 						message.author.send(`There is already a restart vote running in #${message.channel.name} on ${message.guild.name}. Please participate in this vote instead of trying to start a new one.`);
 					}
+				} else {
+					message.react('🚫');
 				}
 			} else {
 				message.author.send(`There is currently no game running in #${message.channel.name} on ${message.guild.name}. Try starting one there with \`${PREFIX}start <gameId>\`.`);
@@ -238,7 +289,7 @@ client.on('messageReactionAdd', async (messageReaction) => {
 	if (gameSession && gameSession.restartVoteMessage && gameSession.restartVoteMessage.id === messageReaction.message.id && messageReaction.emoji.name === '👍') {
 		const restartVoteCount = messageReaction.count - 1;
 		client.globalSettings.debugMode && console.log('Restart vote received in', messageReaction.message.channel.name, 'on', messageReaction.message.guild.name, '. Current count:', restartVoteCount);
-		if (restartVoteCount >= client.globalSettings.unprivilegedRestartVotes) {
+		if (restartVoteCount >= client.getEffectiveSettingValue('unprivilegedRestartVotes', gameSession)) {
 			console.log(`Restarting the game ${gameSession.game.name} (${gameSession.id}) in channel ${messageReaction.message.channel.name} (${messageReaction.message.channel.id}) on ${messageReaction.message.guild.name} (${messageReaction.message.guild.id}).`);
 			await gameSession.restartVoteMessage.react('🔄');
 			await client.restartGame(gameSession);
