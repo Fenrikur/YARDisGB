@@ -58,6 +58,7 @@ module.exports = {
 		} else {
 			let shortMessage = messageContent;
 			let longMessage = previousMessageContent;
+			const hasDifferentLength = messageLength !== previousMessageLength;
 			if (messageLength > previousMessageLength) {
 				shortMessage = previousMessageContent;
 				longMessage = messageContent;
@@ -74,7 +75,7 @@ module.exports = {
 					break;
 				} else if (shortMessageChar !== longMessageChar) {
 					diffCount++;
-					if (shortMessageChar === longMessage.charCodeAt(longIndex + 1)) {
+					if (hasDifferentLength && shortMessageChar === longMessage.charCodeAt(longIndex + 1)) {
 						longIndex++;
 					} else {
 						continue;
