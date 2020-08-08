@@ -86,7 +86,7 @@ module.exports = {
 
 		if (errorMessage) {
 			message.react('❌');
-			message.reply(`${errorMessage} The current word is still: **${previousMessage.content}**`);
+			message.reply(`${errorMessage}${previousMessage !== null ? ` The current word is still: **${previousMessage.content}**` : ''}`);
 		} else {
 			if (gameSettings.dictionaryUrl && !errorMessage) {
 				const reaction = await message.react('🛃');
