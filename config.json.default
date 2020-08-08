@@ -2,9 +2,11 @@
 	"prefix": "!",
 	"token": "",
 	"globalSettings": {
+		"gamesDir": "./games",
+		"sessionsDir": "./sessions",
 		"silentMode": true,
 		"debugMode": false,
-		"isPrivilegedPermission": "ADMINISTRATOR",
+		"isPrivilegedRole": "Game Master",
 		"unprivilegedRestartVotes": 10,
 		"unprivilegedRestartVoteDurationSeconds": 180
 	},
@@ -13,7 +15,7 @@
 			"allowSameUser": false,
 			"wordHistoryLength": 10,
 			"dictionaryUrl": "https://en.wiktionary.org/wiki/%s",
-			"enforceDictionary": false,
+			"enforceDictionary": true,
 			"caseInsensitive": true
 		}
 	}
