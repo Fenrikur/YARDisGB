@@ -48,13 +48,7 @@ Since JSON doesn't really allow for comments to be added, here's a brief summary
 		"unprivilegedRestartVoteDurationSeconds": 180 // time after which a vote will be cancelled (may be overridden per game session; 0 means no unprivileged restarts are possible)
 	},
 	"gameSettings": { // section containing default settings for new game sessions
-		"wordMorphing": { // the one and only (not really ...)
-			"allowSameUser": false, // should the same user be allowed to send multiple words consecutively? (recommended: false, since it's not much of a game with just one player, right?)
-			"wordHistoryLength": 10, // how many recently used words should the bot remember for a session and prevent players from reusing? (0 allows immediate reuse)
-			"dictionaryUrl": "https://en.wiktionary.org/wiki/%s", // URL used for validating words against a dictionary; %s will be replaced by the word in question; 20xx HTTP status codes are interpreted as valid words; to disable dictionary checks altogether, set this to false
-			"enforceDictionary": true, // should the bot reject all words deemed invalid by the dictionary check?
-			"caseInsensitive": true // should This and this be considered different words?
-		}
+		// default settings for individual games go here; examples, see below
 	}
 }
 ```
@@ -80,4 +74,44 @@ Now for the most complicated part: Getting the bot up and running!
 Once you've checked out the repository and run `npm ci` (or `npm i` or even `npm up` if you're adventurous!), you may launch an instance of the bot using
 ```
 node index.js
+```
+
+Available Games
+===
+
+The number of games currently available is rather limited (one *\*cough\**), but more are in the works and everybody (yes, you, too) is invited to suggest (by creating an issue on GitHub) or implement (by creating a pull request on GitHub) new ones any time!
+
+Word Morphing (`wordMorphing`)
+---
+
+The basic rule of this game is very simple:
+The next word may differ from the previous by only a single letter (added, removed or replaced).
+
+There are, however, some additional (optional) constraints available, limiting after how many steps a word may be reused (`wordHistoryLength`) or whether it should be checked against a dictionary (`dictionaryUrl`) (and optionally rejected if that check fails (`enforceDictionary`)).
+To keep the game more interesting, it is also possible to prevent a single player from doing multiple moves in a row (`allowSameUser`) and for whatever reason, there's also an option allowing "ship" and "Ship" to be considered different words (`caseInsensitive`).
+
+### Dictionaries
+
+The dictionary check works by sending an HTTP GET request to the URL provided in `dictionaryUrl`, replacing the sequence `%s` with the word to be checked.
+If the response status code is anything but one from the 2xx category, the check is considered failed.
+
+The default settings use the [English version of Wiktionary](https://en.wiktionary.org/) for this, but since Wiktionary includes words from across all contributed languages, your milage may vary.
+It does though work without an API key (which doesn't mean you should overdo it), so it seemed like a good starting point.
+
+Other dictionaries that might be useful, but require you to sign up and request an API key are:
+- Yandey Dictionary (https://tech.yandex.com/dictionary/),
+- OwlBot (https://owlbot.info/)
+- and others …
+- A short list of some public dictionary APIs can be found at: https://github.com/public-apis/public-apis#dictionaries
+
+### Configuration
+
+```js
+"wordMorphing": { // the one and only (not really ...)
+	"allowSameUser": false, // should the same user be allowed to send multiple words consecutively? (recommended: false, since it's not much of a game with just one player, right?)
+	"wordHistoryLength": 10, // how many recently used words should the bot remember for a session and prevent players from reusing? (0 allows immediate reuse)
+	"dictionaryUrl": "https://en.wiktionary.org/wiki/%s", // URL used for validating words against a dictionary; %s will be replaced by the word in question; 2xx HTTP status codes are interpreted as valid words; to disable dictionary checks altogether, set this to false
+	"enforceDictionary": true, // should the bot reject all words deemed invalid by the dictionary check?
+	"caseInsensitive": true // should This and this be considered different words?
+}
 ```
