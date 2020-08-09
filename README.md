@@ -99,7 +99,7 @@ The default settings use the [English version of Wiktionary](https://en.wiktiona
 It does though work without an API key (which doesn't mean you should overdo it), so it seemed like a good starting point.
 
 Other dictionaries that might be useful, but require you to sign up and request an API key are:
-- Yandey Dictionary (https://tech.yandex.com/dictionary/),
+- Yandex Dictionary (https://tech.yandex.com/dictionary/),
 - OwlBot (https://owlbot.info/)
 - and others …
 - A short list of some public dictionary APIs can be found at: https://github.com/public-apis/public-apis#dictionaries
