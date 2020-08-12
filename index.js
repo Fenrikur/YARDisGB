@@ -245,15 +245,15 @@ client.on('message', async message => {
 				client.stopGame(gameSession);
 				message.react('🏁');
 			} else {
-				message.author.send(`There is currently no game running in #${message.channel.name} on ${message.guild.name}. Try starting one there with \`${PREFIX}start <gameId>\``);
+				message.author.send(`There is currently no game running in #${message.channel.name} on ${message.guild.name}. Try starting one there with \`${PREFIX}start <gameId>\`.`);
 			}
 		} else if (command === 'crules' && message.guild && isPrivileged) {
 			if (gameSession) {
-				message.channel.send(`The rules of the game ${gameSession.game.name} are as follows:\n ${gameSession.game.rules(client.globalSettings, gameSession.settings)}`);
+				message.channel.send(`The rules of the game ${gameSession.game.name} are as follows:\n ${gameSession.game.rules(client.globalSettings, gameSession.settings)}\n\nFor additional commands, try \`${PREFIX}help\`.`);
 			} else if (gameId) {
 				const game = client.games.get(gameId);
 				if (game) {
-					message.channel.send(`The rules of the game ${game.name} are as follows:\n ${game.rules(client.globalSettings, client.gameSettings[gameId])}`);
+					message.channel.send(`The rules of the game ${game.name} are as follows:\n ${game.rules(client.globalSettings, client.gameSettings[gameId])}\n\nFor additional commands, try \`${PREFIX}help\`.`);
 				} else {
 					message.author.send(`There is no game **${gameId}**. Use \`${PREFIX}list\` in here to retrieve a list of available games.`);
 				}
