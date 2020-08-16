@@ -25,7 +25,7 @@ function printSummary(data, channel) {
 	if (data.startTime === undefined || data.morphCount === undefined) {
 		return;
 	}
-	channel.send(`The game lasted for ${utils.millisecondsToText(Date.now() - data.startTime, true)} and all of you together managed to morph the starting word a total of ${Math.max(data.morphCount, 0)} times!`);
+	channel.send(`The game lasted for ${utils.millisecondsToText(Date.now() - data.startTime)} and all of you together managed to morph the starting word a total of ${Math.max(data.morphCount, 0)} times!`);
 }
 
 function printScore(data, channel) {
