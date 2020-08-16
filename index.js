@@ -19,6 +19,7 @@
 const { prefix: PREFIX } = require('./config.json');
 const fs = require('fs');
 const Discord = require('discord.js');
+const utils = require('./utils.js');
 const AsyncLock = require('async-lock');
 
 const client = new Discord.Client();
@@ -105,7 +106,10 @@ client.restartGame = async function (gameSession) {
 
 client.startRestartVote = async function (gameSession, message) {
 	await client.gameSessionLocks.acquire(gameSession.id, async () => {
-		const voteMessage = await message.reply(`your request to restart the game requires ${client.getEffectiveSettingValue('unprivilegedRestartVotes', gameSession)} votes to succeed. Everybody who wishes to support your request can vote by reacting to this message with 👍. Voting will be open for the next ${Math.round(client.getEffectiveSettingValue('unprivilegedRestartVoteDurationSeconds', gameSession) / 60)} minutes and ${Math.round(client.getEffectiveSettingValue('unprivilegedRestartVoteDurationSeconds', gameSession) % 60)} seconds.`);
+		const voteDurationSeconds = client.getEffectiveSettingValue('unprivilegedRestartVoteDurationSeconds', gameSession);
+		// Maximum applicable duration for setTimeout() is 2147483647 (max value for signed 32-bit integer).
+		const voteDurationMilliseconds = voteDurationSeconds * 1000 > 2147483647 ? 2147483647 : voteDurationSeconds * 1000;
+		const voteMessage = await message.reply(`your request to restart the game requires ${client.getEffectiveSettingValue('unprivilegedRestartVotes', gameSession)} votes to succeed. Everybody who wishes to support your request can vote by reacting to this message with 👍. Voting will be open for the next ${utils.millisecondsToText(voteDurationMilliseconds)}.`);
 		voteMessage.react('👍');
 		gameSession.restartVoteMessage = voteMessage;
 		gameSession.restartVoteTimeout = setTimeout(async (voteGameSession) => {
@@ -116,7 +120,7 @@ client.startRestartVote = async function (gameSession, message) {
 			}
 			voteMessage.react('🚫');
 			await client.clearRestartVote(voteGameSession);
-		}, client.getEffectiveSettingValue('unprivilegedRestartVoteDurationSeconds', gameSession) * 1000, gameSession);
+		}, voteDurationMilliseconds, gameSession);
 	});
 };
 
