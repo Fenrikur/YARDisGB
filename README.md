@@ -113,6 +113,7 @@ Other dictionaries that might be useful, but require you to sign up and request 
 	"wordHistoryLength": 10, // how many recently used words should the bot remember for a session and prevent players from reusing? (0 allows immediate reuse)
 	"dictionaryUrl": "https://en.wiktionary.org/wiki/%s", // URL used for validating words against a dictionary; %s will be replaced by the word in question; 2xx HTTP status codes are interpreted as valid words; to disable dictionary checks altogether, set this to false
 	"enforceDictionary": true, // should the bot reject all words deemed invalid by the dictionary check?
-	"caseInsensitive": true // should This and this be considered different words?
+	"caseInsensitive": true, // should This and this be considered different words?
+	"enableScore": true // should scores for individual players be kept? (might impact performance as session files get bigger with more players)
 }
 ```

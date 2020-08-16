@@ -16,7 +16,8 @@
 			"wordHistoryLength": 10,
 			"dictionaryUrl": "https://en.wiktionary.org/wiki/%s",
 			"enforceDictionary": true,
-			"caseInsensitive": true
+			"caseInsensitive": true,
+			"enableScore": true
 		}
 	}
 }

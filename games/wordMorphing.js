@@ -17,7 +17,35 @@
  */
 
 const axios = require('axios').default;
+const Discord = require('discord.js');
 const { prefix: PREFIX } = require('../config.json');
+
+function printScore(data, channel) {
+	if (data.score && data.score.size > 0) {
+		let message = 'Here are the top contributors of the last game:';
+		data.score.sort((a, b) => (b.successCount - b.failureCount) - (a.successCount - a.failureCount));
+		data.score.first(10).forEach((userScore, rank) => {
+			message += `\n${rank + 1}. ${userScore.username} [${userScore.tag}] (✅: ${userScore.successCount} | ❌: ${userScore.failureCount} | 🎬: ${userScore.successCount - userScore.failureCount})`;
+		});
+		channel.send(message + '\n');
+	}
+}
+
+function getUserScore(data, user) {
+	if (data.score.has(user.id)) {
+		return data.score.get(user.id);
+	} else {
+		const userScore = {
+			id: user.id,
+			username: user.username,
+			tag: user.tag,
+			successCount: 0,
+			failureCount: 0,
+		};
+		data.score.set(user.id, userScore);
+		return userScore;
+	}
+}
 
 module.exports = {
 	id: 'wordMorphing',
@@ -29,7 +57,37 @@ module.exports = {
 		return {
 			previousMessage: null,
 			wordHistory: [],
+			score: new Discord.Collection(),
 		};
+	},
+	restoreData: function (data) {
+		const score = new Discord.Collection();
+		data.score && data.score.forEach(userScore => score.set(userScore.id, userScore));
+		data.score = score;
+		return data;
+	},
+	onStart: function (globalSettings, gameSettings, data, channel) {
+		try {
+			channel.send('Starting the game … please wait while we sort our vowels and consonants.');
+		} catch (error) {
+			console.error('Failed to send message to channel!', channel);
+		}
+	},
+	onEnd: function (globalSettings, gameSettings, data, channel) {
+		try {
+			channel.send('It was fun while it lasted! Bye!');
+			gameSettings.enableScore && printScore(data, channel);
+		} catch (error) {
+			console.error('Failed to send message to channel!', channel);
+		}
+	},
+	onRestart: function (globalSettings, gameSettings, data, channel) {
+		try {
+			channel.send('So you got stuck, eh? Let\'s try this again!');
+			gameSettings.enableScore && printScore(data, channel);
+		} catch (error) {
+			console.error('Failed to send message to channel!', channel);
+		}
 	},
 	onMessage: async function (globalSettings, gameSettings, data, message) {
 		const previousMessage = data.previousMessage;
@@ -87,6 +145,7 @@ module.exports = {
 
 		if (errorMessage) {
 			message.react('❌');
+			gameSettings.enableScore && getUserScore(data, message.author).failureCount++;
 			message.reply(`${errorMessage}${previousMessage !== null ? ` The current word is still: **${previousMessage.content}**` : ''}`);
 		} else {
 			if (gameSettings.dictionaryUrl && !errorMessage) {
@@ -96,6 +155,7 @@ module.exports = {
 					globalSettings.debugMode && console.log(response);
 					if (gameSettings.enforceDictionary) {
 						message.react('✅');
+						gameSettings.enableScore && getUserScore(data, message.author).successCount++;
 						gameSettings.wordHistoryLength > 0 && data.wordHistory.push(messageContent);
 						if (data.wordHistory.length > gameSettings.wordHistoryLength) {
 							data.wordHistory = data.wordHistory.slice(data.wordHistory.length - gameSettings.wordHistoryLength);
@@ -114,6 +174,7 @@ module.exports = {
 					errorMessage = `we failed to find the word **${message.content}** in the dictionary.`;
 					if (gameSettings.enforceDictionary) {
 						message.react('❌');
+						gameSettings.enableScore && getUserScore(data, message.author).failureCount++;
 						if (previousMessage) {
 							message.reply(`${errorMessage} The current word is still: **${previousMessage.content}**`);
 						} else {
@@ -130,6 +191,7 @@ module.exports = {
 
 			if (!gameSettings.dictionaryUrl || !gameSettings.enforceDictionary) {
 				message.react('✅');
+				gameSettings.enableScore && getUserScore(data, message.author).successCount++;
 				gameSettings.wordHistoryLength > 0 && data.wordHistory.push(message.content);
 				if (data.wordHistory.length > gameSettings.wordHistoryLength) {
 					data.wordHistory = data.wordHistory.slice(data.wordHistory.length - gameSettings.wordHistoryLength);
@@ -142,16 +204,18 @@ module.exports = {
 			}
 		}
 	},
-	onMessageUpdate: function (globalSettings, settings, data, oldMessage, newMessage) {
+	onMessageUpdate: function (globalSettings, gameSettings, data, oldMessage, newMessage) {
 		const previousMessage = data.previousMessage;
 		if (previousMessage && oldMessage.id === previousMessage.id && oldMessage.content === previousMessage.content) {
 			newMessage.react('💢');
+			gameSettings.enableScore && getUserScore(data, oldMessage.author).failureCount++;
 			newMessage.reply(`editing your previous word after the fact is unfair! The current word is still: **${previousMessage.content}**`);
 		}
 	},
-	onMessageDelete: function (globalSettings, settings, data, message) {
+	onMessageDelete: function (globalSettings, gameSettings, data, message) {
 		const previousMessage = data.previousMessage;
 		if (previousMessage && message.id === previousMessage.id) {
+			gameSettings.enableScore && getUserScore(data, message.author).failureCount++;
 			message.reply(`deleting your previous word after the fact is unfair! The current word is still: **${previousMessage.content}**`);
 		}
 	},

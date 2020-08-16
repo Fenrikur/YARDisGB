@@ -53,6 +53,9 @@ client.restoreGameSessions = function () {
 		const game = client.games.get(gameSession.game.id);
 		if (game) {
 			gameSession.game = game;
+			if (game.restoreData) {
+				gameSession.data = game.restoreData(gameSession.data);
+			}
 			gameSessions.set(gameSession.id, gameSession);
 			console.log(`Restored session ${gameSession.id} of the game ${game.name} with id ${game.id}.`);
 		} else {
@@ -67,7 +70,7 @@ client.storeGameSession = function (gameSession) {
 	fs.writeFileSync(`${client.globalSettings.sessionsDir}/${gameSession.id}.json`, JSON.stringify(gameSession));
 };
 
-client.startGame = function (gameId, sessionId) {
+client.startGame = async function (gameId, sessionId) {
 	const game = client.games.get(gameId);
 	const gameSession = {
 		id: sessionId,
@@ -79,19 +82,22 @@ client.startGame = function (gameId, sessionId) {
 		restartVoteTimeout: null,
 	};
 	client.gameSessions.set(gameSession.id, gameSession);
+	gameSession.game.onStart && await gameSession.game.onStart(client.globalSettings, gameSession.settings, gameSession.data, await client.channels.fetch(gameSession.id, true));
 	client.storeGameSession(gameSession);
 
 	return gameSession;
 };
 
-client.stopGame = function (gameSession) {
-	client.gameSessions.delete(gameSession);
+client.stopGame = async function (gameSession) {
+	gameSession.game.onEnd && await gameSession.game.onEnd(client.globalSettings, gameSession.settings, gameSession.data, await client.channels.fetch(gameSession.id, true));
+	console.log(client.gameSessions.delete(gameSession.id));
 	fs.unlinkSync(`${client.globalSettings.sessionsDir}/${gameSession.id}.json`);
 };
 
 client.restartGame = async function (gameSession) {
 	await client.clearRestartVote(gameSession);
 	await client.gameSessionLocks.acquire(gameSession.id, async () => {
+		gameSession.game.onRestart && await gameSession.game.onRestart(client.globalSettings, gameSession.settings, gameSession.data, await client.channels.fetch(gameSession.id, true));
 		gameSession.data = gameSession.game.start(client.globalSettings);
 		client.storeGameSession(gameSession);
 	});
@@ -217,7 +223,7 @@ client.on('message', async message => {
 			} else if (!gameId) {
 				message.author.send(`You forgot to add the name of the game you wish to start. Use \`${PREFIX}list\` in here to retrieve a list of available games.`);
 			} else {
-				const newGameSession = client.startGame(gameId, message.channel.id);
+				const newGameSession = await client.startGame(gameId, message.channel.id);
 				if (!newGameSession) {
 					message.author.send(`There is no game **${gameId}**. Use \`${PREFIX}list\` in here to retrieve a list of available games.`);
 				} else {
@@ -248,7 +254,7 @@ client.on('message', async message => {
 		} else if (command === 'stop' && message.guild && isPrivileged) {
 			if (gameSession) {
 				console.log(`Ending the game ${gameSession.game.name} (\`${gameSession.game.id}\`) in channel ${message.channel.name} (${message.channel.id})`);
-				client.stopGame(gameSession);
+				await client.stopGame(gameSession);
 				message.react('🏁');
 			} else {
 				message.author.send(`There is currently no game running in #${message.channel.name} on ${message.guild.name}. Try starting one there with \`${PREFIX}start <gameId>\`.`);
@@ -280,7 +286,7 @@ client.on('message', async message => {
 				message.author.send(`You forgot to add the name of the game you wish to know the rules for. Use \`${PREFIX}list\` in here to retrieve a list of available games.`);
 			}
 		} else if (command === 'set' && message.guild && isPrivileged) {
-			const [ setting, value ] = commandArgs.split(' ', 2);
+			const [setting, value] = commandArgs.split(' ', 2);
 			if (!gameSession) {
 				message.author.send(`There is currently no game running in #${message.channel.name} on ${message.guild.name}.You can only change settings if there is a game running.`);
 				message.react('🚫');
