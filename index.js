@@ -311,7 +311,7 @@ client.on('message', async message => {
 			message.react('🚫');
 			message.author.send(`The command \`${PREFIX}${command}\` is unknown or may exclusively be available for use in a channel or via DM.\nTry \`${PREFIX}help\` in here for a list of available commands.`);
 		}
-	} else if (gameSession && !(client.getEffectiveSettingValue('ignorePrefix', gameSession) || message.content.startsWith(client.getEffectiveSettingValue('ignorePrefix', gameSession)))) {
+	} else if (gameSession && !(client.getEffectiveSettingValue('ignorePrefix', gameSession) && message.content.startsWith(client.getEffectiveSettingValue('ignorePrefix', gameSession)))) {
 		await client.gameSessionLocks.acquire(message.channel.id, async () => {
 			await gameSession.game.onMessage(client.globalSettings, gameSession.settings, gameSession.data, message);
 			client.storeGameSession(gameSession);
