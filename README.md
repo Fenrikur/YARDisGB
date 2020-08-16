@@ -43,7 +43,7 @@ Since JSON doesn't really allow for comments to be added, here's a brief summary
 		"gamesDir": "./games", // path to the directory containing the games
 		"sessionsDir": "./sessions", // path in which the bot should store game session data
 		"debugMode": false, // reduces the logging output (really needs to be worked on)
-		"ignorePrefix": "OT:", // (optional) makes the bot ignore messages starting with this prefix
+		"ignorePrefix": "OT:", // (optional) makes the bot ignore messages starting with this case-insensitive prefix
 		"isPrivilegedRole": "Game Master", // name of the role by which privileged users will be identified
 		"unprivilegedRestartVotes": 10, // number of votes required for an unprivileged restart (may be overridden per game session; 0 means no votes required, allowing everybody to restart the game as long as unprivilegedRestartVoteDurationSeconds > 0)
 		"unprivilegedRestartVoteDurationSeconds": 180 // time after which a vote will be cancelled (may be overridden per game session; 0 means no unprivileged restarts are possible)
