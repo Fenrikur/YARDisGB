@@ -18,7 +18,15 @@
 
 const axios = require('axios').default;
 const Discord = require('discord.js');
+const utils = require('../utils.js');
 const { prefix: PREFIX } = require('../config.json');
+
+function printSummary(data, channel) {
+	if (data.startTime === undefined || data.morphCount === undefined) {
+		return;
+	}
+	channel.send(`The game lasted for ${utils.millisecondsToText(Date.now() - data.startTime, true)} and all of you together managed to morph the starting word a total of ${Math.max(data.morphCount, 0)} times!`);
+}
 
 function printScore(data, channel) {
 	if (data.score && data.score.size > 0) {
@@ -58,6 +66,9 @@ module.exports = {
 			previousMessage: null,
 			wordHistory: [],
 			score: new Discord.Collection(),
+			// the first word doesn't count as an actual word morph
+			morphCount: -1,
+			startTime: Date.now(),
 		};
 	},
 	restoreData: function (data) {
@@ -75,8 +86,9 @@ module.exports = {
 	},
 	onEnd: function (globalSettings, gameSettings, data, channel) {
 		try {
-			channel.send('It was fun while it lasted! Bye!');
+			printSummary(data, channel);
 			gameSettings.enableScore && printScore(data, channel);
+			channel.send('It was fun while it lasted! Bye!');
 		} catch (error) {
 			console.error('Failed to send message to channel!', channel);
 		}
@@ -84,6 +96,7 @@ module.exports = {
 	onRestart: function (globalSettings, gameSettings, data, channel) {
 		try {
 			channel.send('So you got stuck, eh? Let\'s try this again!');
+			printSummary(data, channel);
 			gameSettings.enableScore && printScore(data, channel);
 		} catch (error) {
 			console.error('Failed to send message to channel!', channel);
@@ -156,6 +169,7 @@ module.exports = {
 					if (gameSettings.enforceDictionary) {
 						message.react('✅');
 						gameSettings.enableScore && getUserScore(data, message.author).successCount++;
+						data.morphCount++;
 						gameSettings.wordHistoryLength > 0 && data.wordHistory.push(messageContent);
 						if (data.wordHistory.length > gameSettings.wordHistoryLength) {
 							data.wordHistory = data.wordHistory.slice(data.wordHistory.length - gameSettings.wordHistoryLength);
@@ -192,6 +206,7 @@ module.exports = {
 			if (!gameSettings.dictionaryUrl || !gameSettings.enforceDictionary) {
 				message.react('✅');
 				gameSettings.enableScore && getUserScore(data, message.author).successCount++;
+				data.morphCount++;
 				gameSettings.wordHistoryLength > 0 && data.wordHistory.push(message.content);
 				if (data.wordHistory.length > gameSettings.wordHistoryLength) {
 					data.wordHistory = data.wordHistory.slice(data.wordHistory.length - gameSettings.wordHistoryLength);
