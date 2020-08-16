@@ -219,6 +219,17 @@ module.exports = {
 			message.reply(`deleting your previous word after the fact is unfair! The current word is still: **${previousMessage.content}**`);
 		}
 	},
+	hasSetting: function (setting) {
+		switch (setting) {
+			case 'allowSameUser':
+			case 'wordHistoryLength':
+			case 'dictionaryUrl':
+			case 'enforceDictionary':
+			case 'caseInsensitive':
+			default:
+				return false;
+		}
+	},
 	validateSetting: function (setting, value) {
 		if (!setting || !value) {
 			return false;

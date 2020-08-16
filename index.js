@@ -294,7 +294,7 @@ client.on('message', async message => {
 			if (!gameSession) {
 				message.author.send(`There is currently no game running in #${message.channel.name} on ${message.guild.name}.You can only change settings if there is a game running.`);
 				message.react('🚫');
-			} else if (!commandArgs.match(/^[A-Za-z0-9\-_.]+ [^<>\\]+$/g) || (!client.isOverridableSetting(setting) && gameSession.settings[setting] === undefined)) {
+			} else if (!commandArgs.match(/^[A-Za-z0-9\-_.]+ [^<>\\]+$/g) || (!client.isOverridableSetting(setting) && !gameSession.game.hasSetting(setting))) {
 				message.author.send(`There is no setting of that name available in ${gameSession.game.name} (\`${gameSession.game.id}\`).`);
 				message.react('🚫');
 			} else if (client.validateOverridableSetting(setting, value)) {
