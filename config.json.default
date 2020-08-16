@@ -5,6 +5,7 @@
 		"gamesDir": "./games",
 		"sessionsDir": "./sessions",
 		"debugMode": false,
+		"ignorePrefix": "OT:",
 		"isPrivilegedRole": "Game Master",
 		"unprivilegedRestartVotes": 10,
 		"unprivilegedRestartVoteDurationSeconds": 180

@@ -249,22 +249,22 @@ client.on('message', async message => {
 			}
 		} else if (command === 'crules' && message.guild && isPrivileged) {
 			if (gameSession) {
-				message.channel.send(`The rules of the game ${gameSession.game.name} are as follows:\n ${gameSession.game.rules(client.globalSettings, gameSession.settings)}\n\nFor additional commands, try \`${PREFIX}help\`.`);
+				message.channel.send(`The rules of the game ${gameSession.game.name} are as follows:\n ${gameSession.game.rules(client.globalSettings, gameSession.settings)}\n\nFor additional commands, try \`${PREFIX}help\`.${(client.globalSettings.ignorePrefix ? `\nMessages starting with \`${client.globalSettings.ignorePrefix}\` will be ignored.` : '')}`);
 			} else if (gameId) {
 				const game = client.games.get(gameId);
 				if (game) {
-					message.channel.send(`The rules of the game ${game.name} are as follows:\n ${game.rules(client.globalSettings, client.gameSettings[gameId])}\n\nFor additional commands, try \`${PREFIX}help\`.`);
+					message.channel.send(`The rules of the game ${game.name} are as follows:\n ${game.rules(client.globalSettings, client.gameSettings[gameId])}\n\nFor additional commands, try \`${PREFIX}help\`.${(client.globalSettings.ignorePrefix ? `\nMessages starting with \`${client.globalSettings.ignorePrefix}\` will be ignored.` : '')}`);
 				} else {
 					message.author.send(`There is no game **${gameId}**. Use \`${PREFIX}list\` in here to retrieve a list of available games.`);
 				}
 			}
 		} else if (command === 'rules') {
 			if (gameSession) {
-				message.author.send(`I will gladly explain the rules of the game ${gameSession.game.name} in #${message.channel.name} on ${message.guild.name} to you:\n ${gameSession.game.rules(client.globalSettings, gameSession.settings)}`);
+				message.author.send(`I will gladly explain the rules of the game ${gameSession.game.name} in #${message.channel.name} on ${message.guild.name} to you:\n ${gameSession.game.rules(client.globalSettings, gameSession.settings)}\n\nFor additional commands, try \`${PREFIX}help\`.${(client.globalSettings.ignorePrefix ? `\nMessages starting with \`${client.globalSettings.ignorePrefix}\` will be ignored.` : '')}`);
 			} else if (gameId) {
 				const game = client.games.get(gameId);
 				if (game) {
-					message.author.send(`I will gladly explain the rules of the game ${game.name} to you:\n\n ${game.rules(client.globalSettings, client.gameSettings[gameId])}`);
+					message.author.send(`I will gladly explain the rules of the game ${game.name} to you:\n\n ${game.rules(client.globalSettings, client.gameSettings[gameId])}\n\nFor additional commands, try \`${PREFIX}help\`.${(client.globalSettings.ignorePrefix ? `\nMessages starting with \`${client.globalSettings.ignorePrefix}\` will be ignored.` : '')}`);
 				} else {
 					message.author.send(`There is no game **${gameId}**. Use \`${PREFIX}list\` in here to retrieve a list of available games.`);
 				}
@@ -305,7 +305,7 @@ client.on('message', async message => {
 			message.react('🚫');
 			message.author.send(`The command \`${PREFIX}${command}\` is unknown or may exclusively be available for use in a channel or via DM.\nTry \`${PREFIX}help\` in here for a list of available commands.`);
 		}
-	} else if (gameSession) {
+	} else if (gameSession && !(client.globalSettings.ignorePrefix || message.content.startsWith(client.globalSettings.ignorePrefix))) {
 		await client.gameSessionLocks.acquire(message.channel.id, async () => {
 			await gameSession.game.onMessage(client.globalSettings, gameSession.settings, gameSession.data, message);
 			client.storeGameSession(gameSession);
