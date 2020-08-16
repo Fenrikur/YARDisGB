@@ -128,6 +128,8 @@ client.isOverridableSetting = function (setting) {
 			return true;
 		case 'unprivilegedRestartVoteDurationSeconds':
 			return true;
+		case 'ignorePrefix':
+			return true;
 		default:
 			return false;
 	}
@@ -143,6 +145,8 @@ client.validateOverridableSetting = function (setting, value) {
 			return value.match(/^[0-9]+$/) && value >= 0 && value <= 1000;
 		case 'unprivilegedRestartVoteDurationSeconds':
 			return value.match(/^[0-9]+$/) && value >= 0;
+		case 'ignorePrefix':
+			return value === 'false' || value.length > 0;
 		default:
 			return false;
 	}
@@ -158,6 +162,8 @@ client.parseOverridableSetting = function (setting, value) {
 			return Number.parseInt(value);
 		case 'unprivilegedRestartVoteDurationSeconds':
 			return Number.parseInt(value);
+		case 'ignorePrefix':
+			return value === 'false' ? false : value;
 		default:
 			return undefined;
 	}
@@ -305,7 +311,7 @@ client.on('message', async message => {
 			message.react('🚫');
 			message.author.send(`The command \`${PREFIX}${command}\` is unknown or may exclusively be available for use in a channel or via DM.\nTry \`${PREFIX}help\` in here for a list of available commands.`);
 		}
-	} else if (gameSession && !(client.globalSettings.ignorePrefix || message.content.startsWith(client.globalSettings.ignorePrefix))) {
+	} else if (gameSession && !(client.getEffectiveSettingValue('ignorePrefix', gameSession) || message.content.startsWith(client.getEffectiveSettingValue('ignorePrefix', gameSession)))) {
 		await client.gameSessionLocks.acquire(message.channel.id, async () => {
 			await gameSession.game.onMessage(client.globalSettings, gameSession.settings, gameSession.data, message);
 			client.storeGameSession(gameSession);
