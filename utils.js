@@ -3,20 +3,20 @@ module.exports = {
 		const parts = [];
 		let remainder = milliseconds / 1000;
 
-		const seconds = useOnlyBiggestUnit ? (Math.round(remainder * 100) / 100) : Math.round(remainder % 60);
+		const seconds = useOnlyBiggestUnit ? (Math.round(remainder * 100) / 100) : Math.floor(remainder % 60);
 		remainder /= 60;
-		const minutes = useOnlyBiggestUnit ? (Math.round(remainder * 100) / 100) : Math.round(remainder % 60);
+		const minutes = useOnlyBiggestUnit ? (Math.round(remainder * 100) / 100) : Math.floor(remainder % 60);
 		remainder /= 60;
-		const hours = useOnlyBiggestUnit ? (Math.round(remainder * 100) / 100) : Math.round(remainder % 24);
+		const hours = useOnlyBiggestUnit ? (Math.round(remainder * 100) / 100) : Math.floor(remainder % 24);
 		remainder /= 24;
-		const days = useOnlyBiggestUnit ? (Math.round(remainder * 100) / 100) : Math.round(remainder % 7);
-		const weeks = useOnlyBiggestUnit ? Math.round(remainder * 100 / 7) / 100 : Math.round(remainder / 7);
+		const days = useOnlyBiggestUnit ? (Math.round(remainder * 100) / 100) : Math.floor(remainder % 7);
+		const weeks = useOnlyBiggestUnit ? Math.round(remainder * 100 / 7) / 100 : Math.floor(remainder / 7);
 
 		if (weeks >= 1) {
 			parts.push(`${weeks} week${(weeks === 1) ? '' : 's'}`);
 		}
 		if (days >= 1) {
-			parts.push(`${weeks} day${(weeks === 1) ? '' : 's'}`);
+			parts.push(`${days} day${(days === 1) ? '' : 's'}`);
 		}
 		if (hours >= 1) {
 			parts.push(`${hours} hour${(hours === 1) ? '' : 's'}`);
