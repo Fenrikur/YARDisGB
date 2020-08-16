@@ -127,7 +127,7 @@ module.exports = {
 		} else if (!/^\p{General_Category=Letter}+$/gu.test(messageContent)) {
 			errorMessage = 'only letters are allowed. Try again.';
 		} else if (previousMessage === null) {
-			message.react('1️⃣');
+			message.react('1️⃣').catch(console.error);
 			globalSettings.debugMode && console.log(`${message.channel.name} (${message.channel.id}): Set first word to '${message.content}'`);
 		} else if (!gameSettings.allowSameUser && message.author.id === previousMessage.author.id) {
 			errorMessage = 'don\'t just play with yourself, let the others participate as well!';
@@ -169,17 +169,22 @@ module.exports = {
 		}
 
 		if (errorMessage) {
-			message.react('❌');
+			message.react('❌').catch(console.error);
 			gameSettings.enableScore && data.score && getUserScore(data, message.author).failureCount++;
 			message.reply(`${errorMessage}${previousMessage !== null ? ` The current word is still: **${previousMessage.content}**` : ''}`);
 		} else {
 			if (gameSettings.dictionaryUrl && !errorMessage) {
-				const reaction = await message.react('🛃');
+				let reaction = false;
+				try {
+					reaction = await message.react('🛃');
+				} catch (error) {
+					console.error(error);
+				}
 				try {
 					const response = await axios.get(`${gameSettings.dictionaryUrl}`.replace('%s', messageContent));
 					globalSettings.debugMode && console.log(response);
 					if (gameSettings.enforceDictionary) {
-						message.react('✅');
+						message.react('✅').catch(console.error);
 						data.morphCount++;
 						gameSettings.enableScore && data.score && getUserScore(data, message.author).successCount++;
 						gameSettings.wordHistoryLength > 0 && data.wordHistory.push(messageContent);
@@ -193,13 +198,13 @@ module.exports = {
 						};
 						globalSettings.debugMode && console.log(data);
 					} else {
-						message.react('📖');
+						message.react('📖').catch(console.error);
 					}
 				} catch (error) {
 					globalSettings.debugMode && console.warn(error);
 					errorMessage = `we failed to find the word **${message.content}** in the dictionary.`;
 					if (gameSettings.enforceDictionary) {
-						message.react('❌');
+						message.react('❌').catch(console.error);
 						gameSettings.enableScore && data.score && getUserScore(data, message.author).failureCount++;
 						if (previousMessage) {
 							message.reply(`${errorMessage} The current word is still: **${previousMessage.content}**`);
@@ -207,16 +212,16 @@ module.exports = {
 							message.reply(`${errorMessage} The next valid word will be the starting point of the game.`);
 						}
 					} else {
-						message.react('🚮');
+						message.react('🚮').catch(console.error);
 						message.reply(`${errorMessage}\n(… but you're still allowed to use it.)`);
 					}
 				} finally {
-					reaction.remove().catch(reason => { globalSettings.debugMode && console.log('Failed to remove reaction:', reason); });
+					reaction && reaction.remove().catch(reason => { globalSettings.debugMode && console.log('Failed to remove reaction:', reason); });
 				}
 			}
 
 			if (!gameSettings.dictionaryUrl || !gameSettings.enforceDictionary) {
-				message.react('✅');
+				message.react('✅').catch(console.error);
 				data.morphCount++;
 				gameSettings.enableScore && data.score && getUserScore(data, message.author).successCount++;
 				gameSettings.wordHistoryLength > 0 && data.wordHistory.push(message.content);
@@ -234,7 +239,7 @@ module.exports = {
 	onMessageUpdate: function (globalSettings, gameSettings, data, oldMessage, newMessage) {
 		const previousMessage = data.previousMessage;
 		if (previousMessage && oldMessage.id === previousMessage.id && oldMessage.content === previousMessage.content) {
-			newMessage.react('💢');
+			newMessage.react('💢').catch(console.error);
 			gameSettings.enableScore && data.score && getUserScore(data, oldMessage.author).failureCount++;
 			newMessage.reply(`editing your previous word after the fact is unfair! The current word is still: **${previousMessage.content}**`);
 		}

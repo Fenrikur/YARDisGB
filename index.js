@@ -110,7 +110,7 @@ client.startRestartVote = async function (gameSession, message) {
 		// Maximum applicable duration for setTimeout() is 2147483647 (max value for signed 32-bit integer).
 		const voteDurationMilliseconds = voteDurationSeconds * 1000 > 2147483647 ? 2147483647 : voteDurationSeconds * 1000;
 		const voteMessage = await message.reply(`your request to restart the game requires ${client.getEffectiveSettingValue('unprivilegedRestartVotes', gameSession)} votes to succeed. Everybody who wishes to support your request can vote by reacting to this message with 👍. Voting will be open for the next ${utils.millisecondsToText(voteDurationMilliseconds)}.`);
-		voteMessage.react('👍');
+		voteMessage.react('👍').catch(console.error);
 		gameSession.restartVoteMessage = voteMessage;
 		gameSession.restartVoteTimeout = setTimeout(async (voteGameSession) => {
 			try {
@@ -118,7 +118,7 @@ client.startRestartVote = async function (gameSession, message) {
 			} catch (reason) {
 				client.globalSettings.debugMode && console.log('Failed to remove reactions:', reason);
 			}
-			voteMessage.react('🚫');
+			voteMessage.react('🚫').catch(console.error);
 			await client.clearRestartVote(voteGameSession);
 		}, voteDurationMilliseconds, gameSession);
 	});
@@ -232,7 +232,7 @@ client.on('message', async message => {
 					message.author.send(`There is no game **${gameId}**. Use \`${PREFIX}list\` in here to retrieve a list of available games.`);
 				} else {
 					console.log(`Started the game ${newGameSession.game.name} (${gameId}) in channel ${message.channel.name} (${message.channel.id}) on ${message.guild.name} (${message.guild.id}).`);
-					message.react('🎬');
+					message.react('🎬').catch(console.error);
 					message.channel.send(`Let's play ${newGameSession.game.name}! Use \`${PREFIX}rules\` if you want to know the rules.`);
 				}
 			}
@@ -240,7 +240,7 @@ client.on('message', async message => {
 			if (gameSession) {
 				if ((isPrivileged && commandArgs === 'now') || (client.getEffectiveSettingValue('unprivilegedRestartVotes', gameSession) === 0 && client.getEffectiveSettingValue('unprivilegedRestartVoteDurationSeconds', gameSession) > 0)) {
 					console.log(`Restarting the game ${gameSession.game.name} (\`${gameSession.game.id}\`) in channel ${message.channel.name} (${message.channel.id}) on ${message.guild.name} (${message.guild.id}).`);
-					await message.react('🔄');
+					await message.react('🔄').catch(console.error);
 					await client.restartGame(gameSession);
 					message.channel.send(`🔄 Restarting the game ${gameSession.game.name} in 3, 2, 1 …`);
 				} else if (client.getEffectiveSettingValue('unprivilegedRestartVoteDurationSeconds', gameSession) > 0 && client.getEffectiveSettingValue('unprivilegedRestartVotes', gameSession) > 0) {
@@ -250,7 +250,7 @@ client.on('message', async message => {
 						message.author.send(`There is already a restart vote running in #${message.channel.name} on ${message.guild.name}. Please participate in this vote instead of trying to start a new one.`);
 					}
 				} else {
-					message.react('🚫');
+					message.react('🚫').catch(console.error);
 				}
 			} else {
 				message.author.send(`There is currently no game running in #${message.channel.name} on ${message.guild.name}. Try starting one there with \`${PREFIX}start <gameId>\`.`);
@@ -259,7 +259,7 @@ client.on('message', async message => {
 			if (gameSession) {
 				console.log(`Ending the game ${gameSession.game.name} (\`${gameSession.game.id}\`) in channel ${message.channel.name} (${message.channel.id})`);
 				await client.stopGame(gameSession);
-				message.react('🏁');
+				message.react('🏁').catch(console.error);
 			} else {
 				message.author.send(`There is currently no game running in #${message.channel.name} on ${message.guild.name}. Try starting one there with \`${PREFIX}start <gameId>\`.`);
 			}
@@ -293,32 +293,32 @@ client.on('message', async message => {
 			const [setting, value] = commandArgs.split(' ', 2);
 			if (!gameSession) {
 				message.author.send(`There is currently no game running in #${message.channel.name} on ${message.guild.name}.You can only change settings if there is a game running.`);
-				message.react('🚫');
+				message.react('🚫').catch(console.error);
 			} else if (!commandArgs.match(/^[A-Za-z0-9\-_.]+ [^<>\\]+$/g) || (!client.isOverridableSetting(setting) && !gameSession.game.hasSetting(setting))) {
 				message.author.send(`There is no setting of that name available in ${gameSession.game.name} (\`${gameSession.game.id}\`).`);
-				message.react('🚫');
+				message.react('🚫').catch(console.error);
 			} else if (client.validateOverridableSetting(setting, value)) {
 				client.gameSessionLocks.acquire(gameSession.id, () => {
 					message.author.send(`Setting ${setting} to ${value} for ${gameSession.game.name} (\`${gameSession.game.id}\`) in #${message.channel.name} on ${message.guild.name}.`);
 					gameSession.settings[setting] = client.parseOverridableSetting(setting, value);
 					client.storeGameSession(gameSession);
-					message.react('⚙️');
+					message.react('⚙️').catch(console.error);
 				});
 			} else if (gameSession.game.validateSetting(setting, value)) {
 				client.gameSessionLocks.acquire(gameSession.id, () => {
 					message.author.send(`Setting ${setting} to ${value} for ${gameSession.game.name} (\`${gameSession.game.id}\`) in #${message.channel.name} on ${message.guild.name}.`);
 					gameSession.settings[setting] = gameSession.game.parseSetting(setting, value);
 					client.storeGameSession(gameSession);
-					message.react('⚙️');
+					message.react('⚙️').catch(console.error);
 				});
 			} else {
 				message.author.send(`The value you provided for setting ${setting} for ${gameSession.game.name} (\`${gameSession.game.id}\`) in #${message.channel.name} on ${message.guild.name} is invalid.`);
-				message.react('🚫');
+				message.react('🚫').catch(console.error);
 			}
 		} else if (command === 'settings' && message.guild && isPrivileged && gameSession) {
 			message.author.send(`Settings for ${gameSession.game.name} (\`${gameSession.game.id}\`) in #${message.channel.name} on ${message.guild.name}:\n\`${JSON.stringify(gameSession.settings, undefined, 4)}\``);
 		} else {
-			message.react('🚫');
+			message.react('🚫').catch(console.error);
 			message.author.send(`The command \`${PREFIX}${command}\` is unknown or may exclusively be available for use in a channel or via DM.\nTry \`${PREFIX}help\` in here for a list of available commands.`);
 		}
 	} else if (gameSession && !(client.getEffectiveSettingValue('ignorePrefix', gameSession) && message.content.toLowerCase().startsWith(client.getEffectiveSettingValue('ignorePrefix', gameSession).toLowerCase()))) {
@@ -336,7 +336,7 @@ client.on('messageReactionAdd', async (messageReaction) => {
 		client.globalSettings.debugMode && console.log('Restart vote received in', messageReaction.message.channel.name, 'on', messageReaction.message.guild.name, '. Current count:', restartVoteCount);
 		if (restartVoteCount >= client.getEffectiveSettingValue('unprivilegedRestartVotes', gameSession)) {
 			console.log(`Restarting the game ${gameSession.game.name} (${gameSession.id}) in channel ${messageReaction.message.channel.name} (${messageReaction.message.channel.id}) on ${messageReaction.message.guild.name} (${messageReaction.message.guild.id}).`);
-			await gameSession.restartVoteMessage.react('🔄');
+			await gameSession.restartVoteMessage.react('🔄').catch(console.error);
 			await client.restartGame(gameSession);
 			messageReaction.message.channel.send(`🔄 Restart vote successful! Restarting the game ${gameSession.game.name} in 3, 2, 1 …`);
 		}
