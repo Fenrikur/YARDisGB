@@ -116,7 +116,7 @@ module.exports = {
 		const previousMessageLength = previousMessage ? [...previousMessageContent].length : 0;
 		const messageContent = gameSettings.caseInsensitive ? message.content.toLowerCase() : message.content;
 		const messageLength = [...messageContent].length;
-		let errorMessage = null;
+		let errorMessage = false;
 
 		if (!gameSettings.enableScore && data.score) {
 			data.score = false;
@@ -132,7 +132,12 @@ module.exports = {
 		} else if (!gameSettings.allowSameUser && message.author.id === previousMessage.author.id) {
 			errorMessage = 'don\'t just play with yourself, let the others participate as well!';
 		} else if (messageContent === previousMessageContent) {
-			errorMessage = 'simply repeating the previous word is cheating, try coming up with something new!';
+			if (message.createdTimestamp - previousMessage.createdTimestamp < 1000) {
+				message.react('🐌');
+				errorMessage = true;
+			} else {
+				errorMessage = 'simply repeating the previous word is cheating, try coming up with something new!';
+			}
 		} else if (gameSettings.wordHistoryLength > 0 && data.wordHistory.indexOf(messageContent) >= Math.max(0, data.wordHistory.length - gameSettings.wordHistoryLength)) {
 			errorMessage = 'simply repeating a recently used word is cheating, try coming up with something new!';
 		} else if (messageLength > previousMessageLength + 1) {
@@ -171,7 +176,9 @@ module.exports = {
 		if (errorMessage) {
 			message.react('❌').catch(console.error);
 			gameSettings.enableScore && data.score && getUserScore(data, message.author).failureCount++;
-			message.reply(`${errorMessage}${previousMessage !== null ? ` The current word is still: **${previousMessage.content}**` : ''}`);
+			if (errorMessage !== true) {
+				message.reply(`${errorMessage}${previousMessage !== null ? ` The current word is still: **${previousMessage.content}**` : ''}`);
+			}
 		} else {
 			if (gameSettings.dictionaryUrl && !errorMessage) {
 				let reaction = false;
@@ -195,6 +202,7 @@ module.exports = {
 							id: message.id,
 							content: `${message.content}`,
 							author: message.author,
+							createdTimestamp: message.createdTimestamp,
 						};
 						globalSettings.debugMode && console.log(data);
 					} else {
@@ -232,6 +240,7 @@ module.exports = {
 					id: message.id,
 					content: `${message.content}`,
 					author: message.author,
+					createdTimestamp: message.createdTimestamp,
 				};
 			}
 		}
