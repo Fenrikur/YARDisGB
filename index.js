@@ -218,7 +218,7 @@ client.on('message', async message => {
 		const gameId = commandArgs.replace(/[^A-Za-z0-9]/g, '');
 
 		if (command === 'help') {
-			message.author.send(`The following commands are available:\n\t- \`${PREFIX}help\`: (DM/Channel) Might provide more commands when used in a channel on a server where you have privileges.\n\t- \`${PREFIX}list\`: (DM) Receive a list of all available games.\n\t- \`${PREFIX}rules\`: (Channel) Get the rules for the game currently running in the channel.\n\t- \`${PREFIX}rules <gameId>\`: (DM) Get the rules for a specific game.${isPrivileged ? `\n\t- \`${PREFIX}start <gameId>\`: (Channel) Start a new game in a channel.\n\t- \`${PREFIX}stop\`: (Channel) Stop the game currently running in a channel.\n\t- \`${PREFIX}restart\`: (Channel) Restart the game currently running in a channel.\n\t- \`${PREFIX}crules\`: (Channel) Output the rules of the currently running game to the channel.` : `\n\t- \`${PREFIX}restart\`: (Channel) Trigger a vote to restart the game currently running in a channel.`}\n\nYou can find my code at: https://github.com/Fenrikur/YARDisGB`);
+			message.author.send(`The following commands are available:\n\t- \`${PREFIX}help\`: (DM/Channel) Might provide more commands when used in a channel on a server where you have privileges.\n\t- \`${PREFIX}list\`: (DM) Receive a list of all available games.\n\t- \`${PREFIX}rules\`: (Channel) Get the rules for the game currently running in the channel.\n\t- \`${PREFIX}score\`: (Channel) Get the scores for the current game session.\n\t- \`${PREFIX}rules <gameId>\`: (DM) Get the rules for a specific game.${isPrivileged ? `\n\t- \`${PREFIX}start <gameId>\`: (Channel) Start a new game in a channel.\n\t- \`${PREFIX}stop\`: (Channel) Stop the game currently running in a channel.\n\t- \`${PREFIX}restart\`: (Channel) Restart the game currently running in a channel.\n\t- \`${PREFIX}crules\`: (Channel) Output the rules of the currently running game to the channel.` : `\n\t- \`${PREFIX}restart\`: (Channel) Trigger a vote to restart the game currently running in a channel.`}\n\nYou can find my code at: https://github.com/Fenrikur/YARDisGB`);
 		} else if (command === 'list') {
 			message.author.send(`The following games are currently available:\n${client.games.reduce((listString, listGame, listGameId) => { return `${listString}\t- ${listGame.name} (\`${listGameId}\`)\n`; }, '')}Use \`${PREFIX}start <gameId>\` in the respective channel to start one of them there or \`${PREFIX}rules <gameId>\` in here to read its rules.\nWant to add your own game? Check out my repository at https://github.com/Fenrikur/YARDisGB`);
 		} else if (command === 'start' && message.guild && isPrivileged) {
@@ -317,6 +317,10 @@ client.on('message', async message => {
 			}
 		} else if (command === 'settings' && message.guild && isPrivileged && gameSession) {
 			message.author.send(`Settings for ${gameSession.game.name} (\`${gameSession.game.id}\`) in #${message.channel.name} on ${message.guild.name}:\n\`${JSON.stringify(gameSession.settings, undefined, 4)}\``);
+		} else if (command === 'cscore' && message.guild && isPrivileged && gameSession) {
+			message.channel.send(gameSession.game.score(client.globalSettings, gameSession.settings, gameSession.data));
+		} else if (command === 'score' && message.guild && gameSession) {
+			message.author.send(`Current score for the game ${gameSession.game.name} in #${message.channel.name} on ${message.guild.name}:\n${gameSession.game.score(client.globalSettings, gameSession.settings, gameSession.data)}`);
 		} else {
 			message.react('🚫').catch(console.error);
 			message.author.send(`The command \`${PREFIX}${command}\` is unknown or may exclusively be available for use in a channel or via DM.\nTry \`${PREFIX}help\` in here for a list of available commands.`);

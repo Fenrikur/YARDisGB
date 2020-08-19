@@ -21,21 +21,23 @@ const Discord = require('discord.js');
 const utils = require('../utils.js');
 const { prefix: PREFIX } = require('../config.json');
 
-function printSummary(data, channel) {
+function getSummary(data) {
 	if (data.startTime === undefined || data.morphCount === undefined) {
-		return;
+		return '';
 	}
-	channel.send(`The game lasted for ${utils.millisecondsToText(Date.now() - data.startTime)} and all of you together managed to morph the starting word a total of ${Math.max(data.morphCount, 0)} times!`);
+	return `The game has been running for ${utils.millisecondsToText(Date.now() - data.startTime)} and all of you together managed to morph the starting word a total of ${Math.max(data.morphCount, 0)} times!`;
 }
 
-function printScore(data, channel) {
+function getScore(data) {
 	if (data.score && data.score.size > 0) {
-		let message = 'Here are the top contributors to the last game:';
+		let message = 'Here are the top contributors to the game session:';
 		data.score.sort((a, b) => (b.successCount - b.failureCount) - (a.successCount - a.failureCount));
 		data.score.first(10).forEach((userScore, rank) => {
 			message += `\n${rank + 1}. ${userScore.username} [${userScore.tag}] (✅: ${userScore.successCount} | ❌: ${userScore.failureCount} | 🧮: ${userScore.successCount - userScore.failureCount})`;
 		});
-		channel.send(message + '\n');
+		return message + '\n';
+	} else {
+		return '';
 	}
 }
 
@@ -69,6 +71,9 @@ module.exports = {
 	rules: function (globalSettings, gameSettings) {
 		return `\t- The previous accepted word may be morphed in one of three ways:\n\t\t- By adding a new letter,\n\t\t- by removing a letter or\n\t\t- by changing a letter.\n\t- Each new word must be a real word.\n\t- Recently used words may not be reused.\n\t${gameSettings.caseInsensitive ? '- Changes in case will be ignored.' : '- Changes will be case-sensitive.'}\n\nExample:\n\t1) start\n\t2) tart\n\t3) cart\n\nTip: Reached a dead end? Feeling stuck? Feel free to \`${PREFIX}restart\` the game for a fresh start.`;
 	},
+	score: function (globalSettings, gameSettings, data) {
+		return `${getSummary(data)}${gameSettings.enableScore ? `\n${getScore(data)}` : ''}`;
+	},
 	start: function () {
 		return {
 			previousMessage: null,
@@ -94,8 +99,8 @@ module.exports = {
 	},
 	onEnd: function (globalSettings, gameSettings, data, channel) {
 		try {
-			printSummary(data, channel);
-			gameSettings.enableScore && printScore(data, channel);
+			channel.send(getSummary(data));
+			gameSettings.enableScore && channel.send(getScore(data));
 			channel.send('It was fun while it lasted! Bye!');
 		} catch (error) {
 			console.error('Failed to send message to channel!', channel);
@@ -104,8 +109,8 @@ module.exports = {
 	onRestart: function (globalSettings, gameSettings, data, channel) {
 		try {
 			channel.send('So you got stuck, eh? Let\'s try this again!');
-			printSummary(data, channel);
-			gameSettings.enableScore && printScore(data, channel);
+			channel.send(getSummary(data));
+			gameSettings.enableScore && channel.send(getScore(data));
 		} catch (error) {
 			console.error('Failed to send message to channel!', channel);
 		}
