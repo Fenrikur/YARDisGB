@@ -193,7 +193,7 @@ module.exports = {
 					console.error(error);
 				}
 				try {
-					const response = await axios.get(`${gameSettings.dictionaryUrl}`.replace('%s', messageContent));
+					const response = await axios.get(`${gameSettings.dictionaryUrl}`.replace('%s', message.content));
 					globalSettings.debugMode && console.log(response);
 					if (gameSettings.enforceDictionary) {
 						message.react('✅').catch(console.error);
