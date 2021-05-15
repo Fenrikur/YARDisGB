@@ -141,7 +141,7 @@ module.exports = {
 			errorMessage = 'only letters are allowed. Try again.';
 		} else if (previousMessage === null) {
 			message.react('1️⃣').catch(console.error);
-			globalSettings.debugMode && console.log(`${message.channel.name} (${message.channel.id}): Set first word to '${message.content}'`);
+			globalSettings.debugMode && console.log(`${message.channel.name} (${message.channel.id}): Set first word to '${messageContent}'`);
 		} else if (!gameSettings.allowSameUser && message.author.id === previousMessage.author.id) {
 			errorMessage = 'don\'t just play with yourself, let the others participate as well!';
 		} else if (messageContent === previousMessageContent) {
@@ -207,7 +207,7 @@ module.exports = {
 						}
 						data.previousMessage = {
 							id: message.id,
-							content: `${message.content}`,
+							content: `${messageContent}`,
 							author: message.author,
 							createdTimestamp: message.createdTimestamp,
 						};
@@ -216,7 +216,7 @@ module.exports = {
 						message.react('📖').catch(console.error);
 					}
 				} else {
-					errorMessage = `we failed to find the word **${message.content}** in the dictionary.`;
+					errorMessage = `we failed to find the word **${messageContent}** in the dictionary.`;
 					if (gameSettings.enforceDictionary) {
 						message.react('❌').catch(console.error);
 						gameSettings.enableScore && data.score && getUserScore(data, message.author).failureCount++;
@@ -237,13 +237,13 @@ module.exports = {
 				message.react('✅').catch(console.error);
 				data.morphCount++;
 				gameSettings.enableScore && data.score && getUserScore(data, message.author).successCount++;
-				gameSettings.wordHistoryLength > 0 && data.wordHistory.push(message.content);
+				gameSettings.wordHistoryLength > 0 && data.wordHistory.push(messageContent);
 				if (data.wordHistory.length > gameSettings.wordHistoryLength) {
 					data.wordHistory = data.wordHistory.slice(data.wordHistory.length - gameSettings.wordHistoryLength);
 				}
 				data.previousMessage = {
 					id: message.id,
-					content: `${message.content}`,
+					content: `${messageContent}`,
 					author: message.author,
 					createdTimestamp: message.createdTimestamp,
 				};
