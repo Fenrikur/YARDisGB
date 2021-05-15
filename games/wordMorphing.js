@@ -65,6 +65,14 @@ function getUserScore(data, user) {
 	}
 }
 
+async function checkDictionary(dictionaryUrl, word) {
+	let isValid = false;
+	if (dictionaryUrl.startsWith('https://') || dictionaryUrl.startsWith('http://')) {
+		isValid = true && await axios.get(`${dictionaryUrl}`.replace('%s', word)).catch(console.error);
+	}
+	return isValid;
+}
+
 module.exports = {
 	id: 'wordMorphing',
 	name: 'Word Morphing',
@@ -187,13 +195,7 @@ module.exports = {
 		} else {
 			if (gameSettings.dictionaryUrl) {
 				const reaction = await message.react('🛃').catch(console.error);
-				let isValid = true;
-				let error = null;
-				const response = await axios.get(`${gameSettings.dictionaryUrl}`.replace('%s', message.content)).catch((reason) => {
-					error = reason;
-					isValid = false;
-				});
-				globalSettings.debugMode && console.log(response);
+				const isValid = await checkDictionary(gameSettings.dictionaryUrl, messageContent);
 				if (isValid) {
 					if (gameSettings.enforceDictionary) {
 						message.react('✅').catch(console.error);
@@ -214,7 +216,6 @@ module.exports = {
 						message.react('📖').catch(console.error);
 					}
 				} else {
-					globalSettings.debugMode && error && console.warn(error);
 					errorMessage = `we failed to find the word **${message.content}** in the dictionary.`;
 					if (gameSettings.enforceDictionary) {
 						message.react('❌').catch(console.error);
