@@ -101,6 +101,8 @@ Other dictionaries that might be useful, but require you to sign up and request 
 - and others …
 - A short list of some public dictionary APIs can be found at: <https://github.com/public-apis/public-apis#dictionaries>
 
+TODO: Documentation for new offline dictionaries using the dictionary://language URL scheme.
+
 #### Word Morphing Configuration
 
 ```js

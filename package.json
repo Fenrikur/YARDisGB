@@ -6,9 +6,11 @@
   "dependencies": {
     "async-lock": "^1.2.4",
     "axios": "^0.21.1",
-    "discord.js": "^12.2.0"
+    "dictionary-de": "^2.0.4",
+    "dictionary-en": "^3.1.0",
+    "discord.js": "^12.2.0",
+    "nspell": "^2.1.5"
   },
-  "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "run": "node index.js"

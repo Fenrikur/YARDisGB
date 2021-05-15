@@ -19,6 +19,7 @@
 const axios = require('axios').default;
 const Discord = require('discord.js');
 const utils = require('../utils.js');
+const dictionaries = require('../dictionaries.js');
 const { prefix: PREFIX } = require('../config.json');
 
 function getSummary(data) {
@@ -69,6 +70,10 @@ async function checkDictionary(dictionaryUrl, word) {
 	let isValid = false;
 	if (dictionaryUrl.startsWith('https://') || dictionaryUrl.startsWith('http://')) {
 		isValid = true && await axios.get(`${dictionaryUrl}`.replace('%s', word)).catch(console.error);
+	} else {
+		const language = (dictionaryUrl.match(/^dictionary:\/\/(.*)$/) || [])[1];
+		const dictionary = await dictionaries[language];
+		isValid = dictionary && dictionary.correct(word) || dictionary.suggest(word).findIndex(suggestion => suggestion.toLowerCase() == word) >= 0;
 	}
 	return isValid;
 }
@@ -289,7 +294,7 @@ module.exports = {
 			case 'wordHistoryLength':
 				return value.match(/^[0-9]+$/) && value >= 0 && value <= 1000;
 			case 'dictionaryUrl':
-				return value.match(/^https:\/\/.*%s.*$/) || value === 'false';
+				return value.match(/^https:\/\/.*%s.*$/) || value.match(/^dictionary:\/\/[^/\\]+$/) || value === 'false';
 			case 'enforceDictionary':
 				return value === 'true' || value === 'false';
 			case 'caseInsensitive':
