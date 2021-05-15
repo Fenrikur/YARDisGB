@@ -185,16 +185,16 @@ module.exports = {
 				message.reply(`${errorMessage}${previousMessage !== null ? ` The current word is still: **${previousMessage.content}**` : ''}`);
 			}
 		} else {
-			if (gameSettings.dictionaryUrl && !errorMessage) {
-				let reaction = false;
-				try {
-					reaction = await message.react('🛃');
-				} catch (error) {
-					console.error(error);
-				}
-				try {
-					const response = await axios.get(`${gameSettings.dictionaryUrl}`.replace('%s', message.content));
-					globalSettings.debugMode && console.log(response);
+			if (gameSettings.dictionaryUrl) {
+				const reaction = await message.react('🛃').catch(console.error);
+				let isValid = true;
+				let error = null;
+				const response = await axios.get(`${gameSettings.dictionaryUrl}`.replace('%s', message.content)).catch((reason) => {
+					error = reason;
+					isValid = false;
+				});
+				globalSettings.debugMode && console.log(response);
+				if (isValid) {
 					if (gameSettings.enforceDictionary) {
 						message.react('✅').catch(console.error);
 						data.morphCount++;
@@ -213,8 +213,8 @@ module.exports = {
 					} else {
 						message.react('📖').catch(console.error);
 					}
-				} catch (error) {
-					globalSettings.debugMode && console.warn(error);
+				} else {
+					globalSettings.debugMode && error && console.warn(error);
 					errorMessage = `we failed to find the word **${message.content}** in the dictionary.`;
 					if (gameSettings.enforceDictionary) {
 						message.react('❌').catch(console.error);
@@ -228,9 +228,8 @@ module.exports = {
 						message.react('🚮').catch(console.error);
 						message.reply(`${errorMessage}\n(… but you're still allowed to use it.)`);
 					}
-				} finally {
-					reaction && reaction.remove().catch(reason => { globalSettings.debugMode && console.log('Failed to remove reaction:', reason); });
 				}
+				reaction && reaction.remove().catch(reason => { globalSettings.debugMode && console.log('Failed to remove reaction:', reason); });
 			}
 
 			if (!gameSettings.dictionaryUrl || !gameSettings.enforceDictionary) {
