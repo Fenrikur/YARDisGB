@@ -86,22 +86,37 @@ The next word may differ from the previous by only a single letter (added, remov
 There are, however, some additional (optional) constraints available, limiting after how many steps a word may be reused (`wordHistoryLength`) or whether it should be checked against a dictionary (`dictionaryUrl`) (and optionally rejected if that check fails (`enforceDictionary`)).
 To keep the game more interesting, it is also possible to prevent a single player from doing multiple moves in a row (`allowSameUser`) and for whatever reason, there's also an option allowing "ship" and "Ship" to be considered different words (`caseInsensitive`).
 
-#### Word Morphing Dictionaries
+There are two different types of dictionary supported by the game at the moment:
 
-The dictionary check works by sending an HTTP GET request to the URL provided in `dictionaryUrl`, replacing the sequence `%s` with the word to be checked.
+- online, HTTP-based dictionaries
+- offline, hunspell-based dictionaries
+
+For details on each, please see the following sections.
+
+#### Online/HTTP Dictionaries
+
+The online dictionary check works by sending an HTTP GET request to the URL provided in `dictionaryUrl`, replacing the sequence `%s` with the word to be checked.
 If the response status code is anything but one from the 2xx category, the check is considered failed.
 
 The default settings use the [English version of Wiktionary](https://en.wiktionary.org/) for this, but since Wiktionary includes words from across all contributed languages, your milage may vary.
-It does though work without an API key (which doesn't mean you should overdo it), so it seemed like a good starting point.
+It does work without an API key though (which doesn't mean you should overdo it), so it seemed like a good starting point.
 
-Other dictionaries that might be useful, but require you to sign up and request an API key are:
+Other dictionaries that might be useful, but require you to sign up and request an API key (for which there is currently no good way of providing it to the bot without it leaking to the public) are:
 
 - Yandex Dictionary (<https://tech.yandex.com/dictionary/>),
 - OwlBot (<https://owlbot.info/>)
 - and others …
 - A short list of some public dictionary APIs can be found at: <https://github.com/public-apis/public-apis#dictionaries>
 
-TODO: Documentation for new offline dictionaries using the dictionary://language URL scheme.
+#### Offline/hunspell Dictionaries
+
+To decrease the time spent doing HTTP requests, it is also possible to use offline dictionaries with the bot, which also allows for a more refined selection of allowed words.
+Support is currently limited to a single dictionary being active at a time and, out of pure laziness, only [wroom's dictionaries](https://github.com/wooorm/dictionaries) or any that provide an identical API and naming scheme (you could theoretically their MIT licensed template and provide your own (local) module as long as its name matches `/^dictionary-[a-z-]+$/`).
+
+All of the 'officially' supported dictionaries are listed as optional peer dependencies in the `package.json` (not 100% sure this is the right way to do it, but … *shrugs*) and may be installed/provided at any time (e.g. via `npm i dictionary-en --no-save`) since they will be loaded on-demand.
+While adding new dictionaries can be done while the bot is running, reloading or updating dictionaries that have already been loaded will require a restart of the instance.
+
+In order to have the bot use an offline dictionary, simply set `dictionaryUrl` to an URL starting with `hunspell://` followed by the short-code of your preferred (and installed) dictionary (e.g. `en` for English ~> `hunspell://en`).
 
 #### Word Morphing Configuration
 
