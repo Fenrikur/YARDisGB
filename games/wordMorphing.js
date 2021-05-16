@@ -282,7 +282,7 @@ module.exports = {
 			case 'wordHistoryLength':
 				return value.match(/^[0-9]+$/) && value >= 0 && value <= 1000;
 			case 'dictionaryUrl':
-				return value.match(/^https:\/\/.*%s.*$/) || value.match(/^dictionary:\/\/[^/\\]+$/) || value === 'false';
+				return value.match(/^https:\/\/.*%s.*$/) || value.match(/^hunspell:\/\/[^/\\]+$/) || value === 'false';
 			case 'enforceDictionary':
 				return value === 'true' || value === 'false';
 			case 'caseInsensitive':

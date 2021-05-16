@@ -2,48 +2,71 @@
 const nspell = require('nspell');
 const axios = require('axios').default;
 
-async function load(target, language) {
-	try {
-		const dictionary = require(`dictionary-${language}`);
-		target[language] = await (new Promise(resolve => {
-			dictionary((error, data) => {
-				if (error) {
-					throw error;
-				}
-				resolve(nspell(data));
-			});
-		}));
-	} catch (error) {
-		target[language] = false;
-		console.error('Failed to load dictionary for language "', language, '": ', error);
-	}
-	return target[language];
+const hunspellDictionaries = {};
+const httpDictionaries = {};
+
+function parseDictionaryUrl(dictionaryUrl) {
+	return {
+		isHttp: (dictionaryUrl.startsWith('https://') || dictionaryUrl.startsWith('http://')) && dictionaryUrl.includes('%s'),
+		isHunspell: dictionaryUrl.startsWith('hunspell://'),
+		language: (dictionaryUrl.match(/^hunspell:\/\/([^/]*)$/) || [])[1],
+		url: dictionaryUrl,
+	};
 }
 
-async function isValid(receiver, dictionaryUrl, word) {
-	let result = false;
-	if (dictionaryUrl.startsWith('https://') || dictionaryUrl.startsWith('http://')) {
-		result = true && await axios.get(`${dictionaryUrl}`.replace('%s', word)).catch(console.error);
-	} else {
-		const language = (dictionaryUrl.match(/^dictionary:\/\/(.*)$/) || [])[1];
-		const dictionary = await receiver[language];
-		result = dictionary && dictionary.correct(word) || dictionary.suggest(word).findIndex(suggestion => suggestion.toLowerCase() == word) >= 0;
-	}
-	return result;
+async function isValidHunspell(dictionary, word) {
+	return dictionary && dictionary.correct(word) || dictionary.suggest(word).findIndex(suggestion => suggestion.toLowerCase() == word) >= 0;
 }
 
-const handler = {
-	get: function (target, property, receiver) {
-		if (property === 'isValid') {
-			return isValid.bind(target, receiver);
-		}
+async function isValidHttp(dictionaryUrl, word) {
+	return true && await axios.get(`${dictionaryUrl}`.replace('%s', word)).catch(console.error);
+}
 
-		if (typeof target[property] === 'undefined') {
-			return new Promise(resolve => resolve(load(target, property)));
-		}
+async function loadHttp(dictionaryInfo) {
+	if (httpDictionaries[dictionaryInfo.url] === undefined) {
+		httpDictionaries[dictionaryInfo.url] = {
+			isValid: isValidHttp.bind(null, dictionaryInfo.url),
+		};
+	}
+	return httpDictionaries[dictionaryInfo.language];
+}
 
-		return new Promise(resolve => resolve(target[property]));
+async function loadHunspell(dictionaryInfo) {
+	let dictionary = hunspellDictionaries[dictionaryInfo.language];
+	if (dictionary === undefined) {
+		try {
+			const dictionaryData = require(`dictionary-${dictionaryInfo.language}`);
+			dictionary = await (new Promise(resolve => {
+				dictionaryData((error, data) => {
+					if (error) {
+						throw error;
+					}
+					resolve(nspell(data));
+				});
+			}));
+			dictionary.isValid = isValidHunspell.bind(null, dictionary);
+			hunspellDictionaries[dictionaryInfo.language] = dictionary;
+		} catch (error) {
+			console.error('Failed to load dictionary for language "', dictionaryInfo.language, '": ', error);
+		}
+	}
+	return dictionary;
+}
+
+module.exports = {
+	load: async function (dictionaryUrl) {
+		const dictionaryInfo = parseDictionaryUrl(dictionaryUrl);
+		if (dictionaryInfo.isHttp) {
+			return loadHttp(dictionaryInfo);
+		} else if (dictionaryInfo.isHunspell && dictionaryInfo.language !== undefined) {
+			return loadHunspell(dictionaryInfo);
+		} else {
+			console.error('Invalid dictionary:', dictionaryInfo);
+			return undefined;
+		}
+	},
+	isValid: async function (dictionaryUrl, word) {
+		const dictionary = await this.load(dictionaryUrl);
+		return dictionary && await dictionary.isValid(word);
 	},
 };
-
-module.exports = new Proxy({}, handler);
