@@ -16,7 +16,6 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-const axios = require('axios').default;
 const Discord = require('discord.js');
 const utils = require('../utils.js');
 const dictionaries = require('../dictionaries.js');
@@ -64,18 +63,6 @@ function getUserScore(data, user) {
 		data.score.set(user.id, userScore);
 		return userScore;
 	}
-}
-
-async function checkDictionary(dictionaryUrl, word) {
-	let isValid = false;
-	if (dictionaryUrl.startsWith('https://') || dictionaryUrl.startsWith('http://')) {
-		isValid = true && await axios.get(`${dictionaryUrl}`.replace('%s', word)).catch(console.error);
-	} else {
-		const language = (dictionaryUrl.match(/^dictionary:\/\/(.*)$/) || [])[1];
-		const dictionary = await dictionaries[language];
-		isValid = dictionary && dictionary.correct(word) || dictionary.suggest(word).findIndex(suggestion => suggestion.toLowerCase() == word) >= 0;
-	}
-	return isValid;
 }
 
 module.exports = {
@@ -200,7 +187,8 @@ module.exports = {
 		} else {
 			if (gameSettings.dictionaryUrl) {
 				const reaction = await message.react('🛃').catch(console.error);
-				const isValid = await checkDictionary(gameSettings.dictionaryUrl, messageContent);
+				const isValid = await dictionaries.isValid(gameSettings.dictionaryUrl, messageContent);
+
 				if (isValid) {
 					if (gameSettings.enforceDictionary) {
 						message.react('✅').catch(console.error);
