@@ -6,10 +6,376 @@
   "dependencies": {
     "async-lock": "^1.2.4",
     "axios": "^0.21.1",
-    "dictionary-de": "^2.0.4",
-    "dictionary-en": "^3.1.0",
     "discord.js": "^12.2.0",
     "nspell": "^2.1.5"
+  },
+  "peerDependencies": {
+    "dictionary-bg": "",
+    "dictionary-br": "",
+    "dictionary-ca": "",
+    "dictionary-ca-valencia": "",
+    "dictionary-cs": "",
+    "dictionary-da": "",
+    "dictionary-de": "^2.0.4",
+    "dictionary-de-at": "",
+    "dictionary-de-ch": "",
+    "dictionary-el": "",
+    "dictionary-el-polyton": "",
+    "dictionary-en": "^3.1.0",
+    "dictionary-en-au": "",
+    "dictionary-en-ca": "",
+    "dictionary-en-gb": "",
+    "dictionary-en-za": "",
+    "dictionary-eo": "",
+    "dictionary-es": "",
+    "dictionary-es-ar": "",
+    "dictionary-es-bo": "",
+    "dictionary-es-cl": "",
+    "dictionary-es-co": "",
+    "dictionary-es-cr": "",
+    "dictionary-es-cu": "",
+    "dictionary-es-do": "",
+    "dictionary-es-ec": "",
+    "dictionary-es-gt": "",
+    "dictionary-es-hn": "",
+    "dictionary-es-mx": "",
+    "dictionary-es-ni": "",
+    "dictionary-es-pa": "",
+    "dictionary-es-pe": "",
+    "dictionary-es-ph": "",
+    "dictionary-es-pr": "",
+    "dictionary-es-py": "",
+    "dictionary-es-sv": "",
+    "dictionary-es-us": "",
+    "dictionary-es-uy": "",
+    "dictionary-es-ve": "",
+    "dictionary-et": "",
+    "dictionary-eu": "",
+    "dictionary-fa": "",
+    "dictionary-fo": "",
+    "dictionary-fr": "^2.6.0",
+    "dictionary-fur": "",
+    "dictionary-fy": "",
+    "dictionary-ga": "",
+    "dictionary-gd": "",
+    "dictionary-gl": "",
+    "dictionary-he": "",
+    "dictionary-hr": "",
+    "dictionary-hu": "",
+    "dictionary-hy": "",
+    "dictionary-hyw": "",
+    "dictionary-ia": "",
+    "dictionary-ie": "",
+    "dictionary-is": "",
+    "dictionary-it": "",
+    "dictionary-ka": "",
+    "dictionary-ko": "",
+    "dictionary-la": "",
+    "dictionary-lb": "",
+    "dictionary-lt": "",
+    "dictionary-ltg": "",
+    "dictionary-lv": "",
+    "dictionary-mk": "",
+    "dictionary-mn": "",
+    "dictionary-nb": "",
+    "dictionary-nds": "",
+    "dictionary-ne": "",
+    "dictionary-nl": "",
+    "dictionary-nn": "",
+    "dictionary-oc": "",
+    "dictionary-pl": "",
+    "dictionary-pt": "",
+    "dictionary-pt-pt": "",
+    "dictionary-ro": "",
+    "dictionary-ru": "",
+    "dictionary-rw": "",
+    "dictionary-sk": "",
+    "dictionary-sl": "",
+    "dictionary-sr": "",
+    "dictionary-sr-latn": "",
+    "dictionary-sv": "",
+    "dictionary-sv-fi": "",
+    "dictionary-tk": "",
+    "dictionary-tlh": "",
+    "dictionary-tlh-latn": "",
+    "dictionary-tr": "",
+    "dictionary-uk": "",
+    "dictionary-vi": ""
+  },
+  "peerDependenciesMeta": {
+    "dictionary-bg": {
+      "optional": true
+    },
+    "dictionary-br": {
+      "optional": true
+    },
+    "dictionary-ca": {
+      "optional": true
+    },
+    "dictionary-ca-valencia": {
+      "optional": true
+    },
+    "dictionary-cs": {
+      "optional": true
+    },
+    "dictionary-da": {
+      "optional": true
+    },
+    "dictionary-de": {
+      "optional": true
+    },
+    "dictionary-de-at": {
+      "optional": true
+    },
+    "dictionary-de-ch": {
+      "optional": true
+    },
+    "dictionary-el": {
+      "optional": true
+    },
+    "dictionary-el-polyton": {
+      "optional": true
+    },
+    "dictionary-en": {
+      "optional": true
+    },
+    "dictionary-en-au": {
+      "optional": true
+    },
+    "dictionary-en-ca": {
+      "optional": true
+    },
+    "dictionary-en-gb": {
+      "optional": true
+    },
+    "dictionary-en-za": {
+      "optional": true
+    },
+    "dictionary-eo": {
+      "optional": true
+    },
+    "dictionary-es": {
+      "optional": true
+    },
+    "dictionary-es-ar": {
+      "optional": true
+    },
+    "dictionary-es-bo": {
+      "optional": true
+    },
+    "dictionary-es-cl": {
+      "optional": true
+    },
+    "dictionary-es-co": {
+      "optional": true
+    },
+    "dictionary-es-cr": {
+      "optional": true
+    },
+    "dictionary-es-cu": {
+      "optional": true
+    },
+    "dictionary-es-do": {
+      "optional": true
+    },
+    "dictionary-es-ec": {
+      "optional": true
+    },
+    "dictionary-es-gt": {
+      "optional": true
+    },
+    "dictionary-es-hn": {
+      "optional": true
+    },
+    "dictionary-es-mx": {
+      "optional": true
+    },
+    "dictionary-es-ni": {
+      "optional": true
+    },
+    "dictionary-es-pa": {
+      "optional": true
+    },
+    "dictionary-es-pe": {
+      "optional": true
+    },
+    "dictionary-es-ph": {
+      "optional": true
+    },
+    "dictionary-es-pr": {
+      "optional": true
+    },
+    "dictionary-es-py": {
+      "optional": true
+    },
+    "dictionary-es-sv": {
+      "optional": true
+    },
+    "dictionary-es-us": {
+      "optional": true
+    },
+    "dictionary-es-uy": {
+      "optional": true
+    },
+    "dictionary-es-ve": {
+      "optional": true
+    },
+    "dictionary-et": {
+      "optional": true
+    },
+    "dictionary-eu": {
+      "optional": true
+    },
+    "dictionary-fa": {
+      "optional": true
+    },
+    "dictionary-fo": {
+      "optional": true
+    },
+    "dictionary-fr": {
+      "optional": true
+    },
+    "dictionary-fur": {
+      "optional": true
+    },
+    "dictionary-fy": {
+      "optional": true
+    },
+    "dictionary-ga": {
+      "optional": true
+    },
+    "dictionary-gd": {
+      "optional": true
+    },
+    "dictionary-gl": {
+      "optional": true
+    },
+    "dictionary-he": {
+      "optional": true
+    },
+    "dictionary-hr": {
+      "optional": true
+    },
+    "dictionary-hu": {
+      "optional": true
+    },
+    "dictionary-hy": {
+      "optional": true
+    },
+    "dictionary-hyw": {
+      "optional": true
+    },
+    "dictionary-ia": {
+      "optional": true
+    },
+    "dictionary-ie": {
+      "optional": true
+    },
+    "dictionary-is": {
+      "optional": true
+    },
+    "dictionary-it": {
+      "optional": true
+    },
+    "dictionary-ka": {
+      "optional": true
+    },
+    "dictionary-ko": {
+      "optional": true
+    },
+    "dictionary-la": {
+      "optional": true
+    },
+    "dictionary-lb": {
+      "optional": true
+    },
+    "dictionary-lt": {
+      "optional": true
+    },
+    "dictionary-ltg": {
+      "optional": true
+    },
+    "dictionary-lv": {
+      "optional": true
+    },
+    "dictionary-mk": {
+      "optional": true
+    },
+    "dictionary-mn": {
+      "optional": true
+    },
+    "dictionary-nb": {
+      "optional": true
+    },
+    "dictionary-nds": {
+      "optional": true
+    },
+    "dictionary-ne": {
+      "optional": true
+    },
+    "dictionary-nl": {
+      "optional": true
+    },
+    "dictionary-nn": {
+      "optional": true
+    },
+    "dictionary-oc": {
+      "optional": true
+    },
+    "dictionary-pl": {
+      "optional": true
+    },
+    "dictionary-pt": {
+      "optional": true
+    },
+    "dictionary-pt-pt": {
+      "optional": true
+    },
+    "dictionary-ro": {
+      "optional": true
+    },
+    "dictionary-ru": {
+      "optional": true
+    },
+    "dictionary-rw": {
+      "optional": true
+    },
+    "dictionary-sk": {
+      "optional": true
+    },
+    "dictionary-sl": {
+      "optional": true
+    },
+    "dictionary-sr": {
+      "optional": true
+    },
+    "dictionary-sr-latn": {
+      "optional": true
+    },
+    "dictionary-sv": {
+      "optional": true
+    },
+    "dictionary-sv-fi": {
+      "optional": true
+    },
+    "dictionary-tk": {
+      "optional": true
+    },
+    "dictionary-tlh": {
+      "optional": true
+    },
+    "dictionary-tlh-latn": {
+      "optional": true
+    },
+    "dictionary-tr": {
+      "optional": true
+    },
+    "dictionary-uk": {
+      "optional": true
+    },
+    "dictionary-vi": {
+      "optional": true
+    }
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
