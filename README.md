@@ -111,7 +111,7 @@ Other dictionaries that might be useful, but require you to sign up and request 
 #### Offline/hunspell Dictionaries
 
 To decrease the time spent doing HTTP requests, it is also possible to use offline dictionaries with the bot, which also allows for a more refined selection of allowed words.
-Support is currently limited to a single dictionary being active at a time and, out of pure laziness, only [wroom's dictionaries](https://github.com/wooorm/dictionaries) or any that provide an identical API and naming scheme (you could theoretically their MIT licensed template and provide your own (local) module as long as its name matches `/^dictionary-[a-z-]+$/`).
+Support is currently limited to a single dictionary being active at a time and, since they're rather handy, only [wroom's dictionaries](https://github.com/wooorm/dictionaries) or any that provide an identical API and naming scheme (you could theoretically their MIT licensed template and provide your own (local) module as long as its name matches `/^dictionary-[a-z-]+$/`).
 
 All of the 'officially' supported dictionaries are listed as optional peer dependencies in the `package.json` (not 100% sure this is the right way to do it, but … *shrugs*) and may be installed/provided at any time (e.g. via `npm i dictionary-en --no-save`) since they will be loaded on-demand.
 While adding new dictionaries can be done while the bot is running, reloading or updating dictionaries that have already been loaded will require a restart of the instance.
