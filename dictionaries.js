@@ -6,29 +6,45 @@ const hunspellDictionaries = {};
 const httpDictionaries = {};
 
 function parseDictionaryUrl(dictionaryUrl) {
-	return {
-		isHttp: (dictionaryUrl.startsWith('https://') || dictionaryUrl.startsWith('http://')) && dictionaryUrl.includes('%s'),
-		isHunspell: dictionaryUrl.startsWith('hunspell://'),
-		language: (dictionaryUrl.match(/^hunspell:\/\/([^/]*)$/) || [])[1],
-		url: dictionaryUrl,
-	};
+	return Object.defineProperties({}, {
+		'isHttp': {
+			value: (dictionaryUrl.startsWith('https://') || dictionaryUrl.startsWith('http://')) && dictionaryUrl.includes('%s'),
+		},
+		'isHunspell': {
+			value: dictionaryUrl.startsWith('hunspell://'),
+		},
+		'language': {
+			value: (dictionaryUrl.match(/^hunspell:\/\/([a-z-]+)$/) || [])[1],
+		},
+		'url': {
+			value: dictionaryUrl,
+		},
+	});
 }
 
-async function isValidHunspell(dictionary, word) {
-	return dictionary && dictionary.correct(word) || dictionary.suggest(word).findIndex(suggestion => suggestion.toLowerCase() == word) >= 0;
+async function isValidHunspell(word) {
+	return this.correct(word) || this.suggest(word).findIndex(suggestion => suggestion.toLowerCase() == word) >= 0;
 }
 
-async function isValidHttp(dictionaryUrl, word) {
-	return true && await axios.get(`${dictionaryUrl}`.replace('%s', word)).catch(console.error);
+async function isValidHttp(word) {
+	return true && await axios.get(`${this.info.url}`.replace('%s', word)).catch(console.error);
 }
 
 async function loadHttp(dictionaryInfo) {
-	if (httpDictionaries[dictionaryInfo.url] === undefined) {
-		httpDictionaries[dictionaryInfo.url] = {
-			isValid: isValidHttp.bind(null, dictionaryInfo.url),
-		};
+	let dictionary = httpDictionaries[dictionaryInfo.url];
+	if (dictionary === undefined) {
+		dictionary = {};
+		dictionary = Object.defineProperties(dictionary, {
+			info: {
+				value: dictionaryInfo,
+			},
+			isValid: {
+				value: isValidHttp.bind(dictionary),
+			},
+		});
+		httpDictionaries[dictionaryInfo.url] = dictionary;
 	}
-	return httpDictionaries[dictionaryInfo.language];
+	return dictionary;
 }
 
 async function loadHunspell(dictionaryInfo) {
@@ -44,10 +60,13 @@ async function loadHunspell(dictionaryInfo) {
 					resolve(nspell(data));
 				});
 			}));
-			dictionary.isValid = isValidHunspell.bind(null, dictionary);
+			Object.defineProperty(dictionary, 'info', {
+				value: dictionaryInfo,
+			});
+			dictionary.isValid = isValidHunspell.bind(dictionary);
 			hunspellDictionaries[dictionaryInfo.language] = dictionary;
 		} catch (error) {
-			console.error('Failed to load dictionary for language "', dictionaryInfo.language, '": ', error);
+			console.error('Failed to load dictionary for language ', dictionaryInfo.language, ': ', error);
 		}
 	}
 	return dictionary;
