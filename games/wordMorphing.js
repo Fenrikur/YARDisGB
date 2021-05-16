@@ -69,7 +69,7 @@ module.exports = {
 	id: 'wordMorphing',
 	name: 'Word Morphing',
 	rules: function (globalSettings, gameSettings) {
-		return `\t- The previous accepted word may be morphed in one of three ways:\n\t\t- By adding a new letter,\n\t\t- by removing a letter or\n\t\t- by changing a letter.\n\t- Each new word must be a real word.\n\t- Recently used words may not be reused.\n\t${gameSettings.caseInsensitive ? '- Changes in case will be ignored.' : '- Changes will be case-sensitive.'}\n\nExample:\n\t1) start\n\t2) tart\n\t3) cart\n\nTip: Reached a dead end? Feeling stuck? Feel free to \`${PREFIX}restart\` the game for a fresh start.`;
+		return `\t- The previous accepted word may be morphed in one of three ways:\n\t\t- By adding a new letter,\n\t\t- by removing a letter or\n\t\t- by changing a letter.\n\t- Each new word must be a real word.\n\t- Recently used words may not be reused.\n\t${gameSettings.caseInsensitive ? '- Changes in case will be ignored.' : '- Changes will be case-sensitive.'}${gameSettings.dictionaryUrl ? '\n\t' + (gameSettings.enforceDictionary ? `- Words must verify successfully against the currently selected dictionary (\`${gameSettings.dictionaryUrl}\`).` : `- Words will be checked against currently selected dictionary (\`${gameSettings.dictionaryUrl}\`) and marked with 📖 for existing and 🚮 for unknown words.`) : ''}\n\n**Example:**\n\t1) start\n\t2) tart\n\t3) cart\n\n**Tip:** Reached a dead end? Feeling stuck? Feel free to \`${PREFIX}restart\` the game for a fresh start.`;
 	},
 	score: function (globalSettings, gameSettings, data) {
 		return `${getSummary(data)}${gameSettings.enableScore ? `\n${getScore(data)}` : ''}`;

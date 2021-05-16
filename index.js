@@ -265,11 +265,11 @@ client.on('message', async message => {
 			}
 		} else if (command === 'crules' && message.guild && isPrivileged) {
 			if (gameSession) {
-				message.channel.send(`The rules of the game ${gameSession.game.name} are as follows:\n ${gameSession.game.rules(client.globalSettings, gameSession.settings)}\n\nFor additional commands, try \`${PREFIX}help\`.${(client.globalSettings.ignorePrefix ? `\nMessages starting with \`${client.globalSettings.ignorePrefix}\` will be ignored.` : '')}`);
+				message.channel.send(`The rules of the game **${gameSession.game.name}** are as follows:\n ${gameSession.game.rules(client.globalSettings, gameSession.settings)}\n\nFor additional commands, try \`${PREFIX}help\`.${(client.globalSettings.ignorePrefix ? `\nMessages starting with \`${client.globalSettings.ignorePrefix}\` will be ignored.` : '')}`);
 			} else if (gameId) {
 				const game = client.games.get(gameId);
 				if (game) {
-					message.channel.send(`The rules of the game ${game.name} are as follows:\n ${game.rules(client.globalSettings, client.gameSettings[gameId])}\n\nFor additional commands, try \`${PREFIX}help\`.${(client.globalSettings.ignorePrefix ? `\nMessages starting with \`${client.globalSettings.ignorePrefix}\` will be ignored.` : '')}`);
+					message.channel.send(`The rules of the game **${game.name}** are as follows:\n ${game.rules(client.globalSettings, client.gameSettings[gameId])}\n\nFor additional commands, try \`${PREFIX}help\`.${(client.globalSettings.ignorePrefix ? `\nMessages starting with \`${client.globalSettings.ignorePrefix}\` will be ignored.` : '')}`);
 				} else {
 					message.author.send(`There is no game **${gameId}**. Use \`${PREFIX}list\` in here to retrieve a list of available games.`);
 				}
