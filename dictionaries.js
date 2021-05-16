@@ -1,4 +1,3 @@
-// TODO: Support for nodehun as alternative implementation
 const nspell = require('nspell');
 const axios = require('axios').default;
 
