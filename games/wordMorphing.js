@@ -16,9 +16,9 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-const axios = require('axios').default;
 const Discord = require('discord.js');
 const utils = require('../utils.js');
+const dictionaries = require('../dictionaries.js');
 const { prefix: PREFIX } = require('../config.json');
 
 function getSummary(data) {
@@ -69,7 +69,7 @@ module.exports = {
 	id: 'wordMorphing',
 	name: 'Word Morphing',
 	rules: function (globalSettings, gameSettings) {
-		return `\t- The previous accepted word may be morphed in one of three ways:\n\t\t- By adding a new letter,\n\t\t- by removing a letter or\n\t\t- by changing a letter.\n\t- Each new word must be a real word.\n\t- Recently used words may not be reused.\n\t${gameSettings.caseInsensitive ? '- Changes in case will be ignored.' : '- Changes will be case-sensitive.'}\n\nExample:\n\t1) start\n\t2) tart\n\t3) cart\n\nTip: Reached a dead end? Feeling stuck? Feel free to \`${PREFIX}restart\` the game for a fresh start.`;
+		return `\t- The previous accepted word may be morphed in one of three ways:\n\t\t- By adding a new letter,\n\t\t- by removing a letter or\n\t\t- by changing a letter.\n\t- Each new word must be a real word.\n\t- Recently used words may not be reused.\n\t${gameSettings.caseInsensitive ? '- Changes in case will be ignored.' : '- Changes will be case-sensitive.'}${gameSettings.dictionaryUrl ? '\n\t' + (gameSettings.enforceDictionary ? `- Words must verify successfully against the currently selected dictionary (\`${gameSettings.dictionaryUrl}\`).` : `- Words will be checked against currently selected dictionary (\`${gameSettings.dictionaryUrl}\`) and marked with 📖 for existing and 🚮 for unknown words.`) : ''}\n\n**Example:**\n\t1) start\n\t2) tart\n\t3) cart\n\n**Tip:** Reached a dead end? Feeling stuck? Feel free to \`${PREFIX}restart\` the game for a fresh start.`;
 	},
 	score: function (globalSettings, gameSettings, data) {
 		return `${getSummary(data)}${gameSettings.enableScore ? `\n${getScore(data)}` : ''}`;
@@ -133,7 +133,7 @@ module.exports = {
 			errorMessage = 'only letters are allowed. Try again.';
 		} else if (previousMessage === null) {
 			message.react('1️⃣').catch(console.error);
-			globalSettings.debugMode && console.log(`${message.channel.name} (${message.channel.id}): Set first word to '${message.content}'`);
+			globalSettings.debugMode && console.log(`${message.channel.name} (${message.channel.id}): Set first word to '${messageContent}'`);
 		} else if (!gameSettings.allowSameUser && message.author.id === previousMessage.author.id) {
 			errorMessage = 'don\'t just play with yourself, let the others participate as well!';
 		} else if (messageContent === previousMessageContent) {
@@ -185,16 +185,11 @@ module.exports = {
 				message.reply(`${errorMessage}${previousMessage !== null ? ` The current word is still: **${previousMessage.content}**` : ''}`);
 			}
 		} else {
-			if (gameSettings.dictionaryUrl && !errorMessage) {
-				let reaction = false;
-				try {
-					reaction = await message.react('🛃');
-				} catch (error) {
-					console.error(error);
-				}
-				try {
-					const response = await axios.get(`${gameSettings.dictionaryUrl}`.replace('%s', message.content));
-					globalSettings.debugMode && console.log(response);
+			if (gameSettings.dictionaryUrl) {
+				const reaction = await message.react('🛃').catch(console.error);
+				const isValid = await dictionaries.isValid(gameSettings.dictionaryUrl, messageContent);
+
+				if (isValid) {
 					if (gameSettings.enforceDictionary) {
 						message.react('✅').catch(console.error);
 						data.morphCount++;
@@ -205,7 +200,7 @@ module.exports = {
 						}
 						data.previousMessage = {
 							id: message.id,
-							content: `${message.content}`,
+							content: `${messageContent}`,
 							author: message.author,
 							createdTimestamp: message.createdTimestamp,
 						};
@@ -213,9 +208,8 @@ module.exports = {
 					} else {
 						message.react('📖').catch(console.error);
 					}
-				} catch (error) {
-					globalSettings.debugMode && console.warn(error);
-					errorMessage = `we failed to find the word **${message.content}** in the dictionary.`;
+				} else {
+					errorMessage = `we failed to find the word **${messageContent}** in the dictionary.`;
 					if (gameSettings.enforceDictionary) {
 						message.react('❌').catch(console.error);
 						gameSettings.enableScore && data.score && getUserScore(data, message.author).failureCount++;
@@ -228,22 +222,21 @@ module.exports = {
 						message.react('🚮').catch(console.error);
 						message.reply(`${errorMessage}\n(… but you're still allowed to use it.)`);
 					}
-				} finally {
-					reaction && reaction.remove().catch(reason => { globalSettings.debugMode && console.log('Failed to remove reaction:', reason); });
 				}
+				reaction && reaction.remove().catch(reason => { globalSettings.debugMode && console.log('Failed to remove reaction:', reason); });
 			}
 
 			if (!gameSettings.dictionaryUrl || !gameSettings.enforceDictionary) {
 				message.react('✅').catch(console.error);
 				data.morphCount++;
 				gameSettings.enableScore && data.score && getUserScore(data, message.author).successCount++;
-				gameSettings.wordHistoryLength > 0 && data.wordHistory.push(message.content);
+				gameSettings.wordHistoryLength > 0 && data.wordHistory.push(messageContent);
 				if (data.wordHistory.length > gameSettings.wordHistoryLength) {
 					data.wordHistory = data.wordHistory.slice(data.wordHistory.length - gameSettings.wordHistoryLength);
 				}
 				data.previousMessage = {
 					id: message.id,
-					content: `${message.content}`,
+					content: `${messageContent}`,
 					author: message.author,
 					createdTimestamp: message.createdTimestamp,
 				};
@@ -289,7 +282,7 @@ module.exports = {
 			case 'wordHistoryLength':
 				return value.match(/^[0-9]+$/) && value >= 0 && value <= 1000;
 			case 'dictionaryUrl':
-				return value.match(/^https:\/\/.*%s.*$/) || value === 'false';
+				return value.match(/^https:\/\/.*%s.*$/) || value.match(/^hunspell:\/\/[^/\\]+$/) || value === 'false';
 			case 'enforceDictionary':
 				return value === 'true' || value === 'false';
 			case 'caseInsensitive':
