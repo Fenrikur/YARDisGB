@@ -22,10 +22,7 @@ const dictionaries = require('../dictionaries.js');
 const { prefix: PREFIX } = require('../config.json');
 
 function getSummary(data) {
-	if (data.startTime === undefined || data.morphCount === undefined) {
-		return '';
-	}
-	return `The game has been running for ${utils.millisecondsToText(Date.now() - data.startTime)} and all of you together managed to morph the starting word a total of ${Math.max(data.morphCount, 0)} times!`;
+	return `The game has been running for ${data.startTime ? utils.millisecondsToText(Date.now() - data.startTime) : 'an unknown period of time'} and all of you together managed to morph the starting word a total of ${Math.max(data.morphCount || 0, 0)} times!`;
 }
 
 function getScore(data) {
