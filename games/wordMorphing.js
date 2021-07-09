@@ -34,7 +34,7 @@ function getScore(data) {
 		});
 		return message + '\n';
 	} else {
-		return '';
+		return 'There has been no activity during this game session.';
 	}
 }
 
