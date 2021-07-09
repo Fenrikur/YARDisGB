@@ -50,6 +50,7 @@ client.restoreGameSessions = function () {
 	const gameSessions = new Discord.Collection();
 	const sessionFiles = fs.readdirSync(sessionsDir).filter(file => file.endsWith('.json'));
 	for (const file of sessionFiles) {
+		console.log(`Loading session in ${sessionsDir}/${file} …`);
 		const gameSession = require(`${sessionsDir}/${file}`);
 		const game = client.games.get(gameSession.game.id);
 		if (game) {
@@ -59,6 +60,7 @@ client.restoreGameSessions = function () {
 			}
 			gameSessions.set(gameSession.id, gameSession);
 			console.log(`Restored session ${gameSession.id} of the game ${game.name} with id ${game.id}.`);
+			console.debug('gameSession', gameSession);
 		} else {
 			console.log(`Failed to restore session ${gameSession.id} of the game ${gameSession.game.name} with id ${gameSession.game.id} as the game itself is missing.`);
 		}
@@ -68,7 +70,7 @@ client.restoreGameSessions = function () {
 };
 
 client.storeGameSession = function (gameSession) {
-	fs.writeFileSync(`${client.globalSettings.sessionsDir}/${gameSession.id}.json`, JSON.stringify(gameSession));
+	fs.writeFileSync(`${client.globalSettings.sessionsDir}/${gameSession.id}.json`, JSON.stringify(gameSession, (key, value) => key.startsWith('restartVote') ? null : value));
 };
 
 client.startGame = async function (gameId, sessionId) {
@@ -244,10 +246,10 @@ client.on('message', async message => {
 					await client.restartGame(gameSession);
 					message.channel.send(`🔄 Restarting the game ${gameSession.game.name} in 3, 2, 1 …`);
 				} else if (client.getEffectiveSettingValue('unprivilegedRestartVoteDurationSeconds', gameSession) > 0 && client.getEffectiveSettingValue('unprivilegedRestartVotes', gameSession) > 0) {
-					if (gameSession.restartVoteMessage === null) {
-						client.startRestartVote(gameSession, message);
-					} else {
+					if (gameSession.restartVoteMessage) {
 						message.author.send(`There is already a restart vote running in #${message.channel.name} on ${message.guild.name}. Please participate in this vote instead of trying to start a new one.`);
+					} else {
+						client.startRestartVote(gameSession, message);
 					}
 				} else {
 					message.react('🚫').catch(console.error);
