@@ -130,3 +130,13 @@ In order to have the bot use an offline dictionary, simply set `dictionaryUrl` t
 	"enableScore": true // should scores for individual players be kept? (might impact performance as session files get bigger with more players)
 }
 ```
+
+## (Experimental) Running the Bot in a Container
+
+The [`Containerfile`](./Containerfile) provided with this repository can be used to run the bot (e.g. using a rootless `podman`) by running the following basic commands, assuming the global configuration is located in `/home/yardisgb/config/config.json`:
+
+```bash
+podman build -t yardisgb:latest .
+podman create -l app=yardisgb -v=yardisgb-sessions:/var/yardisgb/sessions --mount=type=bind,source=/home/yardisgb/config,dst=/var/yardisgb/config,ro=true --name=yardisgb localhost/yardisgb:latest
+podman start yardisgb
+```
