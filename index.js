@@ -1,19 +1,19 @@
 /*
-    YARDisGB – Yet Another Random Discord Game Bot
-    Copyright (C) 2020  Dominik "Fenrikur" Schöner <yardisgb@fenrikur.de>
+	YARDisGB – Yet Another Random Discord Game Bot
+	Copyright (C) 2020  Dominik "Fenrikur" Schöner <yardisgb@fenrikur.de>
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+	This program is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 const { prefix: PREFIX } = require('./config.json');
@@ -22,7 +22,15 @@ const Discord = require('discord.js');
 const utils = require('./utils.js');
 const AsyncLock = require('async-lock');
 
-const client = new Discord.Client();
+const intents = new Discord.Intents([
+	Discord.Intents.FLAGS.DIRECT_MESSAGES,
+	Discord.Intents.FLAGS.DIRECT_MESSAGE_REACTIONS,
+	Discord.Intents.FLAGS.GUILD_MESSAGE_REACTIONS,
+	Discord.Intents.FLAGS.GUILD_MESSAGES
+]);
+const client = new Discord.Client({
+	intents: intents,
+});
 
 client.loadGames = function () {
 	const gamesDir = client.globalSettings.gamesDir;
