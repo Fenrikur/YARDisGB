@@ -1,19 +1,19 @@
 /*
-    YARDisGB – Yet Another Random Discord Game Bot
-    Copyright (C) 2020  Dominik "Fenrikur" Schöner <yardisgb@fenrikur.de>
+	YARDisGB – Yet Another Random Discord Game Bot
+	Copyright (C) 2020  Dominik "Fenrikur" Schöner <yardisgb@fenrikur.de>
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+	This program is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 const { prefix: PREFIX } = require('./config.json');
@@ -22,7 +22,17 @@ const Discord = require('discord.js');
 const utils = require('./utils.js');
 const AsyncLock = require('async-lock');
 
-const client = new Discord.Client();
+const intents = new Discord.Intents([
+	Discord.Intents.FLAGS.DIRECT_MESSAGES,
+	Discord.Intents.FLAGS.DIRECT_MESSAGE_REACTIONS,
+	Discord.Intents.FLAGS.GUILDS,
+	Discord.Intents.FLAGS.GUILD_MESSAGES,
+	Discord.Intents.FLAGS.GUILD_MESSAGE_REACTIONS,
+]);
+const client = new Discord.Client({
+	intents: intents,
+	partials: ['CHANNEL', 'MESSAGE', 'REACTION'],
+});
 
 client.loadGames = function () {
 	const gamesDir = client.globalSettings.gamesDir;
@@ -111,7 +121,10 @@ client.startRestartVote = async function (gameSession, message) {
 		const voteDurationSeconds = client.getEffectiveSettingValue('unprivilegedRestartVoteDurationSeconds', gameSession);
 		// Maximum applicable duration for setTimeout() is 2147483647 (max value for signed 32-bit integer).
 		const voteDurationMilliseconds = voteDurationSeconds * 1000 > 2147483647 ? 2147483647 : voteDurationSeconds * 1000;
-		const voteMessage = await message.reply(`your request to restart the game requires ${client.getEffectiveSettingValue('unprivilegedRestartVotes', gameSession)} votes to succeed. Everybody who wishes to support your request can vote by reacting to this message with 👍. Voting will be open for the next ${utils.millisecondsToText(voteDurationMilliseconds)}.`);
+		const voteMessage = await message.channel.send({
+			content: `<@${message.author.id}> requested to restart the game. Their request requires ${client.getEffectiveSettingValue('unprivilegedRestartVotes', gameSession)} votes to succeed. Everybody who wishes to support it can vote by reacting to this message with 👍. Voting will be open for the next ${utils.millisecondsToText(voteDurationMilliseconds)}.`,
+			allowedMentions: { parse: ['users'] },
+		});
 		voteMessage.react('👍').catch(console.error);
 		gameSession.restartVoteMessage = voteMessage;
 		gameSession.restartVoteTimeout = setTimeout(async (voteGameSession) => {
@@ -191,13 +204,11 @@ client.getEffectiveSettingValue = function (setting, gameSession) {
 
 client.once('ready', () => {
 	client.user.setStatus('online');
-	client.user.setActivity('🐺🐺🐺🌕', { type: 'WATCHING' })
-		.then(presence => console.log(`Activity set to ${presence.activities[0].name}`))
-		.catch(console.error);
+	client.user.setActivity('🐺🐺🐺🌕', { type: 'WATCHING' });
 	console.log('Ready!');
 });
 
-client.on('message', async message => {
+client.on('messageCreate', async message => {
 	client.globalSettings.debugMode && console.log(message);
 	if (message.author.id === client.user.id) {
 		client.globalSettings.debugMode && console.log('Message by myself. Let\'s not go there again …');
