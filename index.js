@@ -298,14 +298,14 @@ client.on('messageCreate', async message => {
 					message.author.send(`There is no game **${gameId}**. Use \`${PREFIX}list\` in here to retrieve a list of available games.`);
 				}
 			} else if (message.guild) {
-				message.author.send(`There is currently no game running in #${message.channel.name} on ${message.guild.name}. Try starting one in there with \`${PREFIX}start <gameId>\` or asking me here for the rules for a specific game with \`${PREFIX}rules <gameId>\`.`);
+				message.author.send(`There is currently no game running in #${message.channel.name} on ${message.guild.name}. Try ${isPrivileged ? `starting one in there with \`${PREFIX}start <gameId>\` or ` : ''}asking me here for the rules for a specific game with \`${PREFIX}rules <gameId>\`.`);
 			} else {
 				message.author.send(`You forgot to add the name of the game you wish to know the rules for. Use \`${PREFIX}list\` in here to retrieve a list of available games.`);
 			}
 		} else if (command === 'set' && message.guild && isPrivileged) {
 			const [setting, value] = commandArgs.split(' ', 2);
 			if (!gameSession) {
-				message.author.send(`There is currently no game running in #${message.channel.name} on ${message.guild.name}.You can only change settings if there is a game running.`);
+				message.author.send(`There is currently no game running in #${message.channel.name} on ${message.guild.name}. You can only change settings if there is a game running.`);
 				message.react('🚫').catch(console.error);
 			} else if (!commandArgs.match(/^[A-Za-z0-9\-_.]+ [^<>\\]+$/g) || (!client.isOverridableSetting(setting) && !gameSession.game.hasSetting(setting))) {
 				message.author.send(`There is no setting of that name available in ${gameSession.game.name} (\`${gameSession.game.id}\`).`);
