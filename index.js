@@ -25,11 +25,13 @@ const AsyncLock = require('async-lock');
 const intents = new Discord.Intents([
 	Discord.Intents.FLAGS.DIRECT_MESSAGES,
 	Discord.Intents.FLAGS.DIRECT_MESSAGE_REACTIONS,
+	Discord.Intents.FLAGS.GUILDS,
+	Discord.Intents.FLAGS.GUILD_MESSAGES,
 	Discord.Intents.FLAGS.GUILD_MESSAGE_REACTIONS,
-	Discord.Intents.FLAGS.GUILD_MESSAGES
 ]);
 const client = new Discord.Client({
 	intents: intents,
+	partials: ['CHANNEL', 'MESSAGE', 'REACTION'],
 });
 
 client.loadGames = function () {
@@ -199,13 +201,11 @@ client.getEffectiveSettingValue = function (setting, gameSession) {
 
 client.once('ready', () => {
 	client.user.setStatus('online');
-	client.user.setActivity('🐺🐺🐺🌕', { type: 'WATCHING' })
-		.then(presence => console.log(`Activity set to ${presence.activities[0].name}`))
-		.catch(console.error);
+	client.user.setActivity('🐺🐺🐺🌕', { type: 'WATCHING' });
 	console.log('Ready!');
 });
 
-client.on('message', async message => {
+client.on('messageCreate', async message => {
 	client.globalSettings.debugMode && console.log(message);
 	if (message.author.id === client.user.id) {
 		client.globalSettings.debugMode && console.log('Message by myself. Let\'s not go there again …');
