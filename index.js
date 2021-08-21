@@ -121,7 +121,10 @@ client.startRestartVote = async function (gameSession, message) {
 		const voteDurationSeconds = client.getEffectiveSettingValue('unprivilegedRestartVoteDurationSeconds', gameSession);
 		// Maximum applicable duration for setTimeout() is 2147483647 (max value for signed 32-bit integer).
 		const voteDurationMilliseconds = voteDurationSeconds * 1000 > 2147483647 ? 2147483647 : voteDurationSeconds * 1000;
-		const voteMessage = await message.reply(`your request to restart the game requires ${client.getEffectiveSettingValue('unprivilegedRestartVotes', gameSession)} votes to succeed. Everybody who wishes to support your request can vote by reacting to this message with 👍. Voting will be open for the next ${utils.millisecondsToText(voteDurationMilliseconds)}.`);
+		const voteMessage = await message.channel.send({
+			content: `<@${message.author.id}> requested to restart the game. Their request requires ${client.getEffectiveSettingValue('unprivilegedRestartVotes', gameSession)} votes to succeed. Everybody who wishes to support it can vote by reacting to this message with 👍. Voting will be open for the next ${utils.millisecondsToText(voteDurationMilliseconds)}.`,
+			allowedMentions: { parse: ['users'] },
+		});
 		voteMessage.react('👍').catch(console.error);
 		gameSession.restartVoteMessage = voteMessage;
 		gameSession.restartVoteTimeout = setTimeout(async (voteGameSession) => {

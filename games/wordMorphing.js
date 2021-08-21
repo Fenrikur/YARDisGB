@@ -125,27 +125,27 @@ module.exports = {
 		}
 
 		if (/\s/g.test(messageContent)) {
-			errorMessage = 'only contiguous words are allowed in this game. Try again.';
+			errorMessage = 'Only contiguous words are allowed in this game. Try again.';
 		} else if (!/^\p{General_Category=Letter}+$/gu.test(messageContent)) {
-			errorMessage = 'only letters are allowed. Try again.';
+			errorMessage = 'Only letters are allowed. Try again.';
 		} else if (previousMessage === null) {
 			message.react('1️⃣').catch(console.error);
 			globalSettings.debugMode && console.log(`${message.channel.name} (${message.channel.id}): Set first word to '${messageContent}'`);
 		} else if (!gameSettings.allowSameUser && message.author.id === previousMessage.author.id) {
-			errorMessage = 'don\'t just play with yourself, let the others participate as well!';
+			errorMessage = 'Don\'t just play with yourself, let the others participate as well!';
 		} else if (messageContent === previousMessageContent) {
 			if (message.createdTimestamp - previousMessage.createdTimestamp < 1000) {
 				message.react('🐌');
 				errorMessage = true;
 			} else {
-				errorMessage = 'simply repeating the previous word is cheating, try coming up with something new!';
+				errorMessage = 'Simply repeating the previous word is not going to get us anywhere, try coming up with something new!';
 			}
 		} else if (gameSettings.wordHistoryLength > 0 && data.wordHistory.indexOf(messageContent) >= Math.max(0, data.wordHistory.length - gameSettings.wordHistoryLength)) {
-			errorMessage = 'simply repeating a recently used word is cheating, try coming up with something new!';
+			errorMessage = 'Simply repeating a recently used word is not going to get us anywhere, try coming up with something new!';
 		} else if (messageLength > previousMessageLength + 1) {
-			errorMessage = `your new word **${messageContent}** has more than one character more than the previous word!`;
+			errorMessage = `Your new word **${messageContent}** has more than one character more than the previous word!`;
 		} else if (messageLength < previousMessageLength - 1) {
-			errorMessage = `your new word **${messageContent}** has more than one character less than the previous word!`;
+			errorMessage = `Your new word **${messageContent}** has more than one character less than the previous word!`;
 		} else {
 			let shortMessage = messageContent;
 			let longMessage = previousMessageContent;
@@ -160,7 +160,7 @@ module.exports = {
 				const shortMessageChar = shortMessage.charCodeAt(shortIndex);
 				const longMessageChar = longMessage.charCodeAt(longIndex);
 				if (diffCount > 1) {
-					errorMessage = `your new word **${messageContent}** differs from the previous word in more than one letter!`;
+					errorMessage = `Your new word **${messageContent}** differs from the previous word in more than one letter!`;
 					break;
 				} else if (!shortMessageChar && !longMessageChar) {
 					break;
@@ -206,7 +206,7 @@ module.exports = {
 						message.react('📖').catch(console.error);
 					}
 				} else {
-					errorMessage = `we failed to find the word **${messageContent}** in the dictionary.`;
+					errorMessage = `We failed to find the word **${messageContent}** in the dictionary.`;
 					if (gameSettings.enforceDictionary) {
 						message.react('❌').catch(console.error);
 						gameSettings.enableScore && data.score && getUserScore(data, message.author).failureCount++;
@@ -245,14 +245,14 @@ module.exports = {
 		if (previousMessage && oldMessage.id === previousMessage.id && oldMessage.content === previousMessage.content) {
 			newMessage.react('💢').catch(console.error);
 			gameSettings.enableScore && data.score && getUserScore(data, oldMessage.author).failureCount++;
-			newMessage.reply(`editing your previous word after the fact is unfair! The current word is still: **${previousMessage.content}**`);
+			newMessage.reply(`Editing your previous word after the fact is unfair! The current word is still: **${previousMessage.content}**`);
 		}
 	},
 	onMessageDelete: function (globalSettings, gameSettings, data, message) {
 		const previousMessage = data.previousMessage;
 		if (previousMessage && message.id === previousMessage.id) {
 			gameSettings.enableScore && data.score && getUserScore(data, message.author).failureCount++;
-			message.reply(`deleting your previous word after the fact is unfair! The current word is still: **${previousMessage.content}**`);
+			message.channel.send(`<@${message.author.id}> deleting your previous word after the fact is unfair! The current word is still: **${previousMessage.content}**`);
 		}
 	},
 	hasSetting: function (setting) {
