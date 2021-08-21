@@ -6,11 +6,8 @@
   "dependencies": {
     "async-lock": "^1.3.0",
     "axios": "^0.21.1",
-    "bufferutil": "^4.0.3",
     "discord.js": "^13.1.0",
-    "erlpack": "github:discord/erlpack",
-    "nspell": "^2.1.5",
-    "utf-8-validate": "^5.0.5"
+    "nspell": "^2.1.5"
   },
   "peerDependencies": {
     "dictionary-bg": "",
