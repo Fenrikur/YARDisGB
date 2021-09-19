@@ -21,6 +21,7 @@ const utils = require('../utils.js');
 const dictionaries = require('../dictionaries.js');
 const { prefix: PREFIX } = require('../config.json');
 
+const DIGITS = Object.freeze(['0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟']);
 const MoveType = Object.freeze({
 	repetition: { name: 'repetition', isSuccess: false },
 	invalid: { name: 'invalid', isSuccess: false },
@@ -295,8 +296,11 @@ module.exports = {
 			
 		}
 		if (userScore && moveType) {
+			const scoreValue = gameSettings['scoreValue' + utils.capitalizeFirstLetter(moveType.name)] || 0;
 			userScore.statistics[moveType.name]++;
-			userScore.totalScore += gameSettings['scoreValue' + utils.capitalizeFirstLetter(moveType.name)] || 0;
+			userScore.totalScore += scoreValue;
+			message.react(scoreValue == 0 ? '➡️' : (scoreValue > 0 ? '⬆️' : '⬇️')).catch(console.error);
+			message.react(DIGITS[Math.abs(scoreValue)]).catch(console.error);
 		}
 	},
 	onMessageUpdate: function (globalSettings, gameSettings, data, oldMessage, newMessage) {
