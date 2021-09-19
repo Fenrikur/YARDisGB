@@ -23,15 +23,15 @@ const { prefix: PREFIX } = require('../config.json');
 
 const DIGITS = Object.freeze(['0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟']);
 const MoveType = Object.freeze({
-	repetition: { name: 'repetition', isSuccess: false },
-	invalid: { name: 'invalid', isSuccess: false },
-	edgeChange: { name: 'edgeChange', isSuccess: true },
-	innerChange: { name: 'innerChange', isSuccess: true },
-	edgeRemoval: { name: 'edgeRemoval', isSuccess: true },
-	innerRemoval: { name: 'innerRemoval', isSuccess: true },
-	edgeAddition: { name: 'edgeAddition', isSuccess: true },
-	innerAddition: { name: 'innerAddition', isSuccess: true },
-	firstWord: { name: 'firstWord', isSuccess: true },
+	repetition: { name: 'repetition', isSuccess: false, isPrivileged: false, emoji: '❌🔁', description: 'Repetitions of previously used words' },
+	invalid: { name: 'invalid', isSuccess: false, isPrivileged: false, emoji: '❌🚔', description: 'Words that did not adhere to the rules' },
+	edgeChange: { name: 'edgeChange', isSuccess: true, isPrivileged: false, emoji: '🔀↔️', description: 'Changes to the first or last character of a word' },
+	innerChange: { name: 'innerChange', isSuccess: true, isPrivileged: false, emoji: '🔀💠', description: 'Changes within a word' },
+	edgeRemoval: { name: 'edgeRemoval', isSuccess: true, isPrivileged: false, emoji: '🚮↔️', description: 'Removals of the first or last character of a word' },
+	innerRemoval: { name: 'innerRemoval', isSuccess: true, isPrivileged: false, emoji: '🚮💠', description: 'Removals of a character within a word' },
+	edgeAddition: { name: 'edgeAddition', isSuccess: true, isPrivileged: false, emoji: '🆕↔️', description: 'Additions of a character at the beginning or end of a word' },
+	innerAddition: { name: 'innerAddition', isSuccess: true, isPrivileged: false, emoji: '🆕💠', description: 'Additions of a character within a word' },
+	firstWord: { name: 'firstWord', isSuccess: true, isPrivileged: true, emoji: '▶️1️⃣', description: 'First word in a game session' },
 });
 
 function getSummary(data) {
