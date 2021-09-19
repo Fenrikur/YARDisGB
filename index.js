@@ -1,6 +1,6 @@
 /*
 	YARDisGB – Yet Another Random Discord Game Bot
-	Copyright (C) 2020  Dominik "Fenrikur" Schöner <yardisgb@fenrikur.de>
+	Copyright (C) 2020 Fenrikur <yardisgb [at] fenrikur.de>
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by

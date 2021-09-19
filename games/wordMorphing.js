@@ -1,6 +1,6 @@
 /*
     YARDisGB – Yet Another Random Discord Game Bot
-    Copyright (C) 2020  Dominik "Fenrikur" Schöner <yardisgb@fenrikur.de>
+    Copyright (C) 2020  Fenrikur <yardisgb [at] fenrikur.de>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -38,25 +38,35 @@ function getScore(data) {
 	}
 }
 
+function initUserScore(user) {
+	return {
+		id: (user && user.id && Number.isInteger(user.id)) ? user.id : 0,
+		username: (user && user.name) ? user.name : '',
+		tag: (user && user.tag) ? user.tag : '',
+		successCount: 0,
+		failureCount: 0,
+		totalScore: 0,
+		statistics: {
+			repetition: 0,
+			invalid: 0,
+			offTopic: 0,
+			edgeChange: 0,
+			edgeRemoval: 0,
+			innerChange: 0,
+			edgeAddition: 0,
+			innerAddition: 0,
+			firstWord: 0,
+		},
+	}
+}
+
 function getUserScore(data, user) {
 	if (!data.score) {
-		return {
-			id: 0,
-			username: '',
-			tag: '',
-			successCount: 0,
-			failureCount: 0,
-		};
+		return initUserScore();
 	} else if (data.score.has(user.id)) {
 		return data.score.get(user.id);
 	} else {
-		const userScore = {
-			id: user.id,
-			username: user.username,
-			tag: user.tag,
-			successCount: 0,
-			failureCount: 0,
-		};
+		const userScore = initUserScore(user);
 		data.score.set(user.id, userScore);
 		return userScore;
 	}
@@ -119,6 +129,7 @@ module.exports = {
 		const messageContent = gameSettings.caseInsensitive ? message.content.toLowerCase() : message.content;
 		const messageLength = [...messageContent].length;
 		let errorMessage = false;
+		let userScore = (gameSettings.enableScore && data.score) ? getUserScore(data, user) : false;
 
 		if (!gameSettings.enableScore && data.score) {
 			data.score = false;
@@ -263,6 +274,15 @@ module.exports = {
 			case 'enforceDictionary':
 			case 'caseInsensitive':
 			case 'enableScore':
+			case 'scoreValueRepetition':
+			case 'scoreValueInvalid':
+			case 'scoreValueOffTopic':
+			case 'scoreValueEdgeChange':
+			case 'scoreValueInnerChange':
+			case 'scoreValueEdgeRemoval':
+			case 'scoreValueInnerRemoval':
+			case 'scoreValueEdgeAddition':
+			case 'scoreValueInnerAddition':
 				return true;
 			default:
 				return false;
@@ -286,6 +306,16 @@ module.exports = {
 				return value === 'true' || value === 'false';
 			case 'enableScore':
 				return value === 'true' || value === 'false';
+			case 'scoreValueRepetition':
+			case 'scoreValueInvalid':
+			case 'scoreValueOffTopic':
+			case 'scoreValueEdgeChange':
+			case 'scoreValueInnerChange':
+			case 'scoreValueEdgeRemoval':
+			case 'scoreValueInnerRemoval':
+			case 'scoreValueEdgeAddition':
+			case 'scoreValueInnerAddition':
+				return value.match(/^[0-9]+$/) && value >= -1000 && value <= 1000;
 			default:
 				return false;
 		}
@@ -308,6 +338,16 @@ module.exports = {
 				return value === 'true';
 			case 'enableScore':
 				return value === 'true';
+			case 'scoreValueRepetition':
+			case 'scoreValueInvalid':
+			case 'scoreValueOffTopic':
+			case 'scoreValueEdgeChange':
+			case 'scoreValueInnerChange':
+			case 'scoreValueEdgeRemoval':
+			case 'scoreValueInnerRemoval':
+			case 'scoreValueEdgeAddition':
+			case 'scoreValueInnerAddition':
+				return Number.parseInt(value);
 			default:
 				return undefined;
 		}
