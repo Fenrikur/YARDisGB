@@ -285,18 +285,18 @@ client.on('messageCreate', async message => {
 				if (game) {
 					message.channel.send(`The rules of the game **${game.name}** are as follows:\n ${game.rules(client.globalSettings, client.gameSettings[gameId])}\n\nFor additional commands, try \`${PREFIX}help\`.${(client.globalSettings.ignorePrefix ? `\nMessages starting with \`${client.globalSettings.ignorePrefix}\` will be ignored.` : '')}`);
 				} else {
-					message.author.send(`There is no game **${gameId}**. Use \`${PREFIX}list\` in here to retrieve a list of available games.`);
+					message.author.send(`There is no game with id \`${gameId}\`. Use \`${PREFIX}list\` in here to retrieve a list of available games.`);
 				}
 			}
 		} else if (command === 'rules') {
 			if (gameSession) {
-				message.author.send(`I will gladly explain the rules of the game ${gameSession.game.name} in #${message.channel.name} on ${message.guild.name} to you:\n ${gameSession.game.rules(client.globalSettings, gameSession.settings)}\n\nFor additional commands, try \`${PREFIX}help\`.${(client.globalSettings.ignorePrefix ? `\nMessages starting with \`${client.globalSettings.ignorePrefix}\` will be ignored.` : '')}`);
+				message.author.send(`I will gladly explain the rules of the game **${gameSession.game.name}** in #${message.channel.name} on ${message.guild.name} to you:\n ${gameSession.game.rules(client.globalSettings, gameSession.settings)}\n\nFor additional commands, try \`${PREFIX}help\`.${(client.globalSettings.ignorePrefix ? `\nMessages starting with \`${client.globalSettings.ignorePrefix}\` will be ignored.` : '')}`);
 			} else if (gameId) {
 				const game = client.games.get(gameId);
 				if (game) {
-					message.author.send(`I will gladly explain the rules of the game ${game.name} to you:\n\n ${game.rules(client.globalSettings, client.gameSettings[gameId])}\n\nFor additional commands, try \`${PREFIX}help\`.${(client.globalSettings.ignorePrefix ? `\nMessages starting with \`${client.globalSettings.ignorePrefix}\` will be ignored.` : '')}`);
+					message.author.send(`I will gladly explain the rules of the game **${game.name}** to you:\n\n ${game.rules(client.globalSettings, client.gameSettings[gameId])}\n\nFor additional commands, try \`${PREFIX}help\`.${(client.globalSettings.ignorePrefix ? `\nMessages starting with \`${client.globalSettings.ignorePrefix}\` will be ignored.` : '')}`);
 				} else {
-					message.author.send(`There is no game **${gameId}**. Use \`${PREFIX}list\` in here to retrieve a list of available games.`);
+					message.author.send(`There is no game with id \`${gameId}\`. Use \`${PREFIX}list\` in here to retrieve a list of available games.`);
 				}
 			} else if (message.guild) {
 				message.author.send(`There is currently no game running in #${message.channel.name} on ${message.guild.name}. Try ${isPrivileged ? `starting one in there with \`${PREFIX}start <gameId>\` or ` : ''}asking me here for the rules for a specific game with \`${PREFIX}rules <gameId>\`.`);
@@ -309,24 +309,24 @@ client.on('messageCreate', async message => {
 				message.author.send(`There is currently no game running in #${message.channel.name} on ${message.guild.name}. You can only change settings if there is a game running.`);
 				message.react('🚫').catch(console.error);
 			} else if (!commandArgs.match(/^[A-Za-z0-9\-_.]+ [^<>\\]+$/g) || (!client.isOverridableSetting(setting) && !gameSession.game.hasSetting(setting))) {
-				message.author.send(`There is no setting of that name available in ${gameSession.game.name} (\`${gameSession.game.id}\`).`);
+				message.author.send(`There is no setting \`${setting}\` available in ${gameSession.game.name} (\`${gameSession.game.id}\`).`);
 				message.react('🚫').catch(console.error);
 			} else if (client.validateOverridableSetting(setting, value)) {
 				client.gameSessionLocks.acquire(gameSession.id, () => {
-					message.author.send(`Setting ${setting} to ${value} for ${gameSession.game.name} (\`${gameSession.game.id}\`) in #${message.channel.name} on ${message.guild.name}.`);
+					message.author.send(`Setting \`${setting}\` (override) to \`${value}\` for ${gameSession.game.name} (\`${gameSession.game.id}\`) in #${message.channel.name} on ${message.guild.name}.`);
 					gameSession.settings[setting] = client.parseOverridableSetting(setting, value);
 					client.storeGameSession(gameSession);
 					message.react('⚙️').catch(console.error);
 				});
 			} else if (gameSession.game.validateSetting(setting, value)) {
 				client.gameSessionLocks.acquire(gameSession.id, () => {
-					message.author.send(`Setting ${setting} to ${value} for ${gameSession.game.name} (\`${gameSession.game.id}\`) in #${message.channel.name} on ${message.guild.name}.`);
+					message.author.send(`Setting \`${setting}\` (game) to ${value} for ${gameSession.game.name} (\`${gameSession.game.id}\`) in #${message.channel.name} on ${message.guild.name}.`);
 					gameSession.settings[setting] = gameSession.game.parseSetting(setting, value);
 					client.storeGameSession(gameSession);
 					message.react('⚙️').catch(console.error);
 				});
 			} else {
-				message.author.send(`The value you provided for setting ${setting} for ${gameSession.game.name} (\`${gameSession.game.id}\`) in #${message.channel.name} on ${message.guild.name} is invalid.`);
+				message.author.send(`The value \`${value}\` for setting \`${setting}\` for ${gameSession.game.name} (\`${gameSession.game.id}\`) in #${message.channel.name} on ${message.guild.name} is invalid.`);
 				message.react('🚫').catch(console.error);
 			}
 		} else if (command === 'settings' && message.guild && isPrivileged && gameSession) {
