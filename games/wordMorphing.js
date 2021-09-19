@@ -51,6 +51,18 @@ function getScore(data) {
 	}
 }
 
+function getDetailedScore(userScore, isPrivileged) {
+	let result = `🧮🧮 | ${userScore.totalScore} | Total number of points earned\n`;
+	
+	Object.entries(userScore.statistics).forEach(entry => {
+		if (!MoveType[entry[0]].isPrivileged || isPrivileged){
+			result += `${MoveType[entry[0]].emoji} | ${entry[1]} | ${MoveType[entry[0]].description}\n`;
+		}
+	});
+
+	return result.trim();
+}
+
 function UserScore(user) {
 	this.id = (user && user.id) ? user.id : 0;
 	this.username = (user && user.username) ? user.username : '';
