@@ -109,6 +109,25 @@ module.exports = {
 	score: function (globalSettings, gameSettings, data) {
 		return `${getSummary(data)}${gameSettings.enableScore ? `\n${getScore(data)}` : ''}`;
 	},
+	userScore: function (globalSettings, gameSettings, data, user, isPrivileged) {
+		let result = '';
+		if (!data.score) {
+			result = 'No scores available.';
+		} else if (!user || !user.tag) {
+			result += '----\n';
+			data.score.forEach(userScore => {
+				result += `User \`${userScore.tag}\`\n${getDetailedScore(userScore, isPrivileged)}\n----\n`;
+			});
+		} else {
+			const userScore = data.score.find(entry => entry.id === user.id || entry.tag === user.tag);
+			if (userScore) {
+				result = getDetailedScore(userScore, isPrivileged);
+			} else {
+				result = `No score available for \`${user.tag || user.id}\`.`;
+			}
+		}
+		return result;
+	},
 	start: function () {
 		return {
 			previousMessage: null,
