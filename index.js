@@ -94,8 +94,10 @@ client.startGame = async function (gameId, sessionId) {
 		restartVoteMessage: null,
 		restartVoteTimeout: null,
 	};
+	const channel = await client.channels.fetch(gameSession.id, true);
 	client.gameSessions.set(gameSession.id, gameSession);
-	gameSession.game.onStart && await gameSession.game.onStart(client.globalSettings, gameSession.settings, gameSession.data, await client.channels.fetch(gameSession.id, true));
+	channel.send(`Let's play ${gameSession.game.name}! Use \`${PREFIX}rules\` if you want to know the rules.`);
+	gameSession.game.onStart && await gameSession.game.onStart(client.globalSettings, gameSession.settings, gameSession.data, channel);
 	client.storeGameSession(gameSession);
 
 	return gameSession;
@@ -246,7 +248,6 @@ client.on('messageCreate', async message => {
 				} else {
 					console.log(`Started the game ${newGameSession.game.name} (${gameId}) in channel ${message.channel.name} (${message.channel.id}) on ${message.guild.name} (${message.guild.id}).`);
 					message.react('🎬').catch(console.error);
-					message.channel.send(`Let's play ${newGameSession.game.name}! Use \`${PREFIX}rules\` if you want to know the rules.`);
 				}
 			}
 		} else if (command === 'restart' && message.guild) {
@@ -254,8 +255,8 @@ client.on('messageCreate', async message => {
 				if ((isPrivileged && commandArgs === 'now') || (client.getEffectiveSettingValue('unprivilegedRestartVotes', gameSession) === 0 && client.getEffectiveSettingValue('unprivilegedRestartVoteDurationSeconds', gameSession) > 0)) {
 					console.log(`Restarting the game ${gameSession.game.name} (\`${gameSession.game.id}\`) in channel ${message.channel.name} (${message.channel.id}) on ${message.guild.name} (${message.guild.id}).`);
 					await message.react('🔄').catch(console.error);
-					await client.restartGame(gameSession);
 					message.channel.send(`🔄 Restarting the game ${gameSession.game.name} in 3, 2, 1 …`);
+					await client.restartGame(gameSession);
 				} else if (client.getEffectiveSettingValue('unprivilegedRestartVoteDurationSeconds', gameSession) > 0 && client.getEffectiveSettingValue('unprivilegedRestartVotes', gameSession) > 0) {
 					if (gameSession.restartVoteMessage) {
 						message.author.send(`There is already a restart vote running in #${message.channel.name} on ${message.guild.name}. Please participate in this vote instead of trying to start a new one.`);
@@ -355,8 +356,8 @@ client.on('messageReactionAdd', async (messageReaction) => {
 		if (restartVoteCount >= client.getEffectiveSettingValue('unprivilegedRestartVotes', gameSession)) {
 			console.log(`Restarting the game ${gameSession.game.name} (${gameSession.id}) in channel ${messageReaction.message.channel.name} (${messageReaction.message.channel.id}) on ${messageReaction.message.guild.name} (${messageReaction.message.guild.id}).`);
 			await gameSession.restartVoteMessage.react('🔄').catch(console.error);
-			await client.restartGame(gameSession);
 			messageReaction.message.channel.send(`🔄 Restart vote successful! Restarting the game ${gameSession.game.name} in 3, 2, 1 …`);
+			await client.restartGame(gameSession);
 		}
 	}
 });
