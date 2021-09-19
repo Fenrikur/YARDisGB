@@ -68,7 +68,7 @@ function getUserScoreFailureCount(userScore) {
 }
 
 function getUserScore(data, user) {
-	if (!data.score) {
+	if (!data.score || !user || !user.id || !user.id.match(/^[0-9]+$/)) {
 		return new UserScore();
 	} else if (data.score.has(user.id)) {
 		return data.score.get(user.id);
