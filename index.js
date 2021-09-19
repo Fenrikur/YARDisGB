@@ -335,6 +335,18 @@ client.on('messageCreate', async message => {
 			message.channel.send(gameSession.game.score(client.globalSettings, gameSession.settings, gameSession.data));
 		} else if (command === 'score' && message.guild && gameSession) {
 			message.author.send(`Current score for the game ${gameSession.game.name} in #${message.channel.name} on ${message.guild.name}:\n${gameSession.game.score(client.globalSettings, gameSession.settings, gameSession.data)}`);
+		} else if (command === 'myscore' && message.guild && gameSession) {
+			if (!gameSession.settings.enableScore) {
+				message.author.send(`Unable to show your detailed score for the game ${gameSession.game.name} in #${message.channel.name} on ${message.guild.name}, because scoring has been disabled for this game session.`);
+			} else {
+				message.author.send(`Here is your detailed score for the game ${gameSession.game.name} in #${message.channel.name} on ${message.guild.name}:\n${gameSession.game.userScore(client.globalSettings, gameSession.settings, gameSession.data, message.author, isPrivileged)}`);
+			}
+		} else if (command === 'userscore' && message.guild && isPrivileged && gameSession) {
+			if (!gameSession.settings.enableScore) {
+				message.author.send(`Unable to show detailed user scores for the game ${gameSession.game.name} in #${message.channel.name} on ${message.guild.name}, because scoring has been disabled for this game session.`);
+			} else {
+				message.author.send(`Here is the detailed score for ${commandArgs ? `user \`${commandArgs}\`` : 'all users'} for the game ${gameSession.game.name} in #${message.channel.name} on ${message.guild.name}:\n${gameSession.game.userScore(client.globalSettings, gameSession.settings, gameSession.data, { id: commandArgs, tag: commandArgs }, isPrivileged)}`);
+			}
 		} else {
 			message.react('🚫').catch(console.error);
 			message.author.send(`The command \`${PREFIX}${command}\` is unknown or may exclusively be available for use in a channel or via DM.\nTry \`${PREFIX}help\` in here for a list of available commands.`);
