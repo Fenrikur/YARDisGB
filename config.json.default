@@ -20,13 +20,13 @@
 			"enableScore": true,
 			"scoreValueRepetition": 0,
 			"scoreValueInvalid": 0,
-			"scoreValueOffTopic": 0,
 			"scoreValueEdgeChange": 1,
 			"scoreValueInnerChange": 2,
 			"scoreValueEdgeRemoval": 1,
 			"scoreValueInnerRemoval": 1,
 			"scoreValueEdgeAddition": 2,
-			"scoreValueInnerAddition": 3
+			"scoreValueInnerAddition": 3,
+			"firstWord": 0
 		}
 	}
 }

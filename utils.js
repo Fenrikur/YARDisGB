@@ -30,4 +30,7 @@ module.exports = {
 
 		return useOnlyBiggestUnit ? parts[0] : parts.join(' ');
 	},
+	capitalizeFirstLetter: function (string) {
+		return string.charAt(0).toUpperCase() + string.slice(1);
+	},
 };
