@@ -363,7 +363,7 @@ module.exports = {
 			case 'scoreValueEdgeAddition':
 			case 'scoreValueInnerAddition':
 			case 'scoreValueFirstWord':
-				return value.match(/^[0-9]+$/) && value >= -1000 && value <= 1000;
+				return value.match(/^-?[0-9]+$/) && value >= -10 && value <= 10;
 			default:
 				return false;
 		}
