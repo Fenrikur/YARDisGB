@@ -42,7 +42,7 @@ function getScore(data) {
 		let message = 'Here are the top contributors to the game session:';
 		data.score.sort((a, b) => b.totalScore - a.totalScore);
 		data.score.first(10).forEach((userScore, rank) => {
-			message += `\n${rank + 1}. ${userScore.username} [${userScore.tag}] (✅: ${getUserScoreSuccessCount(userScore)} | ❌: ${getUserScoreFailureCount(userScore)} | 🧮: ${userScore.totalScore})`;
+			message += `\n${rank + 1}. ${userScore.username} [${userScore.tag}] | 🧮: ${userScore.totalScore}`;
 		});
 		return message + '\n';
 	} else {
