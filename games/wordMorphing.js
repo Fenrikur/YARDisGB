@@ -91,10 +91,6 @@ function getUserScore(data, user) {
 	}
 }
 
-function doSessionStart(globalSettings, gameSettings, data, channel) {
-	channel.send('Starting the game … please wait while we sort our vowels and consonants.\n… done.\nPlease provide a word to serve as the starting point for this session.');
-}
-
 function doSessionEnd(globalSettings, gameSettings, data, channel) {
 	channel.send(getSummary(data));
 	gameSettings.enableScore && channel.send(getScore(data));
@@ -146,7 +142,7 @@ module.exports = {
 	},
 	onStart: function (globalSettings, gameSettings, data, channel) {
 		try {
-			doSessionStart(globalSettings, gameSettings, data, channel);
+			channel.send('Please provide a word to serve as the starting point for this session.');
 		} catch (error) {
 			console.error('Failed to send message to channel!', channel);
 		}
@@ -163,7 +159,6 @@ module.exports = {
 		try {
 			channel.send('So you got stuck, eh? Let\'s try this again!');
 			doSessionEnd(globalSettings, gameSettings, data, channel);
-			doSessionStart(globalSettings, gameSettings, data, channel);
 		} catch (error) {
 			console.error('Failed to send message to channel!', channel);
 		}
@@ -185,7 +180,7 @@ module.exports = {
 			errorMessage = 'Only letters are allowed. Try again.';
 			moveType = MoveType.invalid;
 		} else if (previousMessage === null) {
-			message.react('1️⃣').catch(console.error);
+			message.react('🚀').catch(console.error);
 			globalSettings.debugMode && console.log(`${message.channel.name} (${message.channel.id}): Set first word to '${messageContent}'`);
 			moveType = MoveType.firstWord;
 		} else if (!gameSettings.allowSameUser && message.author.id === previousMessage.author.id) {
@@ -349,27 +344,25 @@ module.exports = {
 			message.channel.send(`<@${message.author.id}> deleting your previous word after the fact is unfair! The current word is still: **${previousMessage.content}**`);
 		}
 	},
+	defaultSettings: {
+		allowSameUser: false,
+		wordHistoryLength: 10,
+		dictionaryUrl: "https://en.wiktionary.org/wiki/%s",
+		enforceDictionary: true,
+		caseInsensitive: true,
+		enableScore: true,
+		scoreValueRepetition: 0,
+		scoreValueInvalid: 0,
+		scoreValueEdgeChange: 1,
+		scoreValueInnerChange: 2,
+		scoreValueEdgeRemoval: 1,
+		scoreValueInnerRemoval: 1,
+		scoreValueEdgeAddition: 2,
+		scoreValueInnerAddition: 3,
+		firstWord: 0
+	},
 	hasSetting: function (setting) {
-		switch (setting) {
-			case 'allowSameUser':
-			case 'wordHistoryLength':
-			case 'dictionaryUrl':
-			case 'enforceDictionary':
-			case 'caseInsensitive':
-			case 'enableScore':
-			case 'scoreValueRepetition':
-			case 'scoreValueInvalid':
-			case 'scoreValueEdgeChange':
-			case 'scoreValueInnerChange':
-			case 'scoreValueEdgeRemoval':
-			case 'scoreValueInnerRemoval':
-			case 'scoreValueEdgeAddition':
-			case 'scoreValueInnerAddition':
-			case 'scoreValueFirstWord':
-				return true;
-			default:
-				return false;
-		}
+		return Object.keys(this.defaultSettings).indexOf(setting) >= 0;
 	},
 	validateSetting: function (setting, value) {
 		if (!setting || !value) {

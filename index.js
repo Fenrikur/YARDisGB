@@ -83,20 +83,20 @@ client.storeGameSession = function (gameSession) {
 	fs.writeFileSync(`${client.globalSettings.sessionsDir}/${gameSession.id}.json`, JSON.stringify(gameSession, (key, value) => key.startsWith('restartVote') ? null : value));
 };
 
-client.startGame = async function (gameId, sessionId) {
+client.startGame = async function (gameId, sessionId, sessionSettings) {
 	const game = client.games.get(gameId);
 	const gameSession = {
 		id: sessionId,
 		game: game,
 		data: game.start(),
-		settings: client.gameSettings[gameId],
+		settings: Object.assign({}, game.defaultSettings, client.gameSettings[gameId], sessionSettings ? Object.fromEntries(Object.entries(sessionSettings).filter(entry => game.hasSetting(entry[0]))) : {}),
 		restartVoteCount: 0,
 		restartVoteMessage: null,
 		restartVoteTimeout: null,
 	};
 	const channel = await client.channels.fetch(gameSession.id, true);
 	client.gameSessions.set(gameSession.id, gameSession);
-	channel.send(`Let's play ${gameSession.game.name}! Use \`${PREFIX}rules\` if you want to know the rules.`);
+	channel.send(`Starting the game ${gameSession.game.name}! Use \`${PREFIX}rules\` if you want to know the rules.`);
 	gameSession.game.onStart && await gameSession.game.onStart(client.globalSettings, gameSession.settings, gameSession.data, channel);
 	client.storeGameSession(gameSession);
 
@@ -113,8 +113,7 @@ client.restartGame = async function (gameSession) {
 	await client.clearRestartVote(gameSession);
 	await client.gameSessionLocks.acquire(gameSession.id, async () => {
 		gameSession.game.onRestart && await gameSession.game.onRestart(client.globalSettings, gameSession.settings, gameSession.data, await client.channels.fetch(gameSession.id, true));
-		gameSession.data = gameSession.game.start(client.globalSettings);
-		client.storeGameSession(gameSession);
+		client.startGame(gameSession.game.id, gameSession.id, gameSession.settings);
 	});
 };
 
