@@ -52,11 +52,12 @@ function getScore(data) {
 }
 
 function getDetailedScore(userScore, isPrivileged) {
-	let result = `🧮🧮 | ${userScore.totalScore} | Total number of points earned\n`;
+	const valueColumnWidth = 4;
+	let result = `🧮🧮 | \`${utils.createPaddedString(userScore.totalScore || '-', valueColumnWidth)}\` | Total number of points earned\n`;
 	
 	Object.entries(userScore.statistics).forEach(entry => {
 		if (!MoveType[entry[0]].isPrivileged || isPrivileged){
-			result += `${MoveType[entry[0]].emoji} | ${entry[1]} | ${MoveType[entry[0]].description}\n`;
+			result += `${MoveType[entry[0]].emoji} | \`${utils.createPaddedString(entry[1] || '-', valueColumnWidth)}\` | ${MoveType[entry[0]].description}\n`;
 		}
 	});
 

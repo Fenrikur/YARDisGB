@@ -30,7 +30,12 @@ module.exports = {
 
 		return useOnlyBiggestUnit ? parts[0] : parts.join(' ');
 	},
-	capitalizeFirstLetter: function (string) {
-		return string.charAt(0).toUpperCase() + string.slice(1);
+	capitalizeFirstLetter: function (inputString) {
+		return inputString.charAt(0).toUpperCase() + inputString.slice(1);
 	},
+	createPaddedString: function(input, paddedLength, paddingCharacter) {
+		input = input ? input.toString() : '';
+		paddingCharacter = paddingCharacter ? paddingCharacter.toString()[0] : ' ';
+		return `${paddingCharacter.repeat(Math.max(0, paddedLength - input.length))}${input}`;
+	}
 };
