@@ -26,7 +26,7 @@
 			"scoreValueInnerRemoval": 1,
 			"scoreValueEdgeAddition": 2,
 			"scoreValueInnerAddition": 3,
-			"firstWord": 0
+			"scoreValueFirstWord": 0
 		}
 	}
 }

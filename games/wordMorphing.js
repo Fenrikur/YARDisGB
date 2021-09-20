@@ -360,7 +360,7 @@ module.exports = {
 		scoreValueInnerRemoval: 1,
 		scoreValueEdgeAddition: 2,
 		scoreValueInnerAddition: 3,
-		firstWord: 0
+		scoreValueFirstWord: 0
 	},
 	hasSetting: function (setting) {
 		return Object.keys(this.defaultSettings).indexOf(setting) >= 0;
