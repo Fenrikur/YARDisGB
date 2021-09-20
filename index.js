@@ -1,6 +1,6 @@
 /*
 	YARDisGB – Yet Another Random Discord Game Bot
-	Copyright (C) 2020  Dominik "Fenrikur" Schöner <yardisgb@fenrikur.de>
+	Copyright (C) 2020 Fenrikur <yardisgb [at] fenrikur.de>
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -83,19 +83,21 @@ client.storeGameSession = function (gameSession) {
 	fs.writeFileSync(`${client.globalSettings.sessionsDir}/${gameSession.id}.json`, JSON.stringify(gameSession, (key, value) => key.startsWith('restartVote') ? null : value));
 };
 
-client.startGame = async function (gameId, sessionId) {
+client.startGame = async function (gameId, sessionId, sessionSettings) {
 	const game = client.games.get(gameId);
 	const gameSession = {
 		id: sessionId,
 		game: game,
 		data: game.start(),
-		settings: client.gameSettings[gameId],
+		settings: Object.assign({}, game.defaultSettings, client.gameSettings[gameId], sessionSettings ? Object.fromEntries(Object.entries(sessionSettings).filter(entry => game.hasSetting(entry[0]))) : {}),
 		restartVoteCount: 0,
 		restartVoteMessage: null,
 		restartVoteTimeout: null,
 	};
+	const channel = await client.channels.fetch(gameSession.id, true);
 	client.gameSessions.set(gameSession.id, gameSession);
-	gameSession.game.onStart && await gameSession.game.onStart(client.globalSettings, gameSession.settings, gameSession.data, await client.channels.fetch(gameSession.id, true));
+	channel.send(`Starting the game ${gameSession.game.name}! Use \`${PREFIX}rules\` if you want to know the rules.`);
+	gameSession.game.onStart && await gameSession.game.onStart(client.globalSettings, gameSession.settings, gameSession.data, channel);
 	client.storeGameSession(gameSession);
 
 	return gameSession;
@@ -111,8 +113,7 @@ client.restartGame = async function (gameSession) {
 	await client.clearRestartVote(gameSession);
 	await client.gameSessionLocks.acquire(gameSession.id, async () => {
 		gameSession.game.onRestart && await gameSession.game.onRestart(client.globalSettings, gameSession.settings, gameSession.data, await client.channels.fetch(gameSession.id, true));
-		gameSession.data = gameSession.game.start(client.globalSettings);
-		client.storeGameSession(gameSession);
+		client.startGame(gameSession.game.id, gameSession.id, gameSession.settings);
 	});
 };
 
@@ -231,7 +232,7 @@ client.on('messageCreate', async message => {
 		const gameId = commandArgs.replace(/[^A-Za-z0-9]/g, '');
 
 		if (command === 'help') {
-			message.author.send(`The following commands are available:\n\t- \`${PREFIX}help\`: (DM/Channel) Might provide more commands when used in a channel on a server where you have privileges.\n\t- \`${PREFIX}list\`: (DM) Receive a list of all available games.\n\t- \`${PREFIX}rules\`: (Channel) Get the rules for the game currently running in the channel.\n\t- \`${PREFIX}score\`: (Channel) Get the scores for the current game session.\n\t- \`${PREFIX}rules <gameId>\`: (DM) Get the rules for a specific game.${isPrivileged ? `\n\t- \`${PREFIX}start <gameId>\`: (Channel) Start a new game in a channel.\n\t- \`${PREFIX}stop\`: (Channel) Stop the game currently running in a channel.\n\t- \`${PREFIX}restart\`: (Channel) Restart the game currently running in a channel.\n\t- \`${PREFIX}crules\`: (Channel) Output the rules of the currently running game to the channel.` : `\n\t- \`${PREFIX}restart\`: (Channel) Trigger a vote to restart the game currently running in a channel.`}\n\nYou can find my code at: https://github.com/Fenrikur/YARDisGB`);
+			message.author.send(`The following commands are available:\n\t- \`${PREFIX}help\`: (DM/Channel) Might provide more commands when used in a channel on a server where you have privileges.\n\t- \`${PREFIX}list\`: (DM) Receive a list of all available games via DM.\n\t- \`${PREFIX}rules\`: (Channel) Get the rules for the game currently running in the channel.\n\t- \`${PREFIX}rules <gameId>\`: (DM) Get the rules for a specific game.\n\t- \`${PREFIX}restart\`: (Channel) Initiate a vote to restart the game currently running in a channel.\n\t- \`${PREFIX}score\`: (Channel) Get the scores for the current game session via DM.\n\t- \`${PREFIX}myscore\`: (Channel) Get a detailed listing of how you've done so far in the current game session via DM.${isPrivileged ? `\n\nThe following commands are only available to *privileged users* and require a special role on the respective server:\n\t- \`${PREFIX}start <gameId>\`: (Channel) Start a new game in a channel.\n\t- \`${PREFIX}stop\`: (Channel) Stop the game currently running in a channel.\n\t- \`${PREFIX}restart now\`: (Channel) Immediately restart the game currently running in a channel.\n\t- \`${PREFIX}crules\`: (Channel) Output the rules of the currently running game to the channel.\n\t- \`${PREFIX}cscore\`: (Channel) Output the scores for the current game session to the channel.\n\t- \`${PREFIX}userscore <userId|userTag>\`: (Channel) Get the detailed scores for the specified or all users in the current game session via DM.` : ''}\n\nYou can find my code at: https://github.com/Fenrikur/YARDisGB`);
 		} else if (command === 'list') {
 			message.author.send(`The following games are currently available:\n${client.games.reduce((listString, listGame, listGameId) => { return `${listString}\t- ${listGame.name} (\`${listGameId}\`)\n`; }, '')}Use \`${PREFIX}start <gameId>\` in the respective channel to start one of them there or \`${PREFIX}rules <gameId>\` in here to read its rules.\nWant to add your own game? Check out my repository at https://github.com/Fenrikur/YARDisGB`);
 		} else if (command === 'start' && message.guild && isPrivileged) {
@@ -246,7 +247,6 @@ client.on('messageCreate', async message => {
 				} else {
 					console.log(`Started the game ${newGameSession.game.name} (${gameId}) in channel ${message.channel.name} (${message.channel.id}) on ${message.guild.name} (${message.guild.id}).`);
 					message.react('🎬').catch(console.error);
-					message.channel.send(`Let's play ${newGameSession.game.name}! Use \`${PREFIX}rules\` if you want to know the rules.`);
 				}
 			}
 		} else if (command === 'restart' && message.guild) {
@@ -254,8 +254,8 @@ client.on('messageCreate', async message => {
 				if ((isPrivileged && commandArgs === 'now') || (client.getEffectiveSettingValue('unprivilegedRestartVotes', gameSession) === 0 && client.getEffectiveSettingValue('unprivilegedRestartVoteDurationSeconds', gameSession) > 0)) {
 					console.log(`Restarting the game ${gameSession.game.name} (\`${gameSession.game.id}\`) in channel ${message.channel.name} (${message.channel.id}) on ${message.guild.name} (${message.guild.id}).`);
 					await message.react('🔄').catch(console.error);
-					await client.restartGame(gameSession);
 					message.channel.send(`🔄 Restarting the game ${gameSession.game.name} in 3, 2, 1 …`);
+					await client.restartGame(gameSession);
 				} else if (client.getEffectiveSettingValue('unprivilegedRestartVoteDurationSeconds', gameSession) > 0 && client.getEffectiveSettingValue('unprivilegedRestartVotes', gameSession) > 0) {
 					if (gameSession.restartVoteMessage) {
 						message.author.send(`There is already a restart vote running in #${message.channel.name} on ${message.guild.name}. Please participate in this vote instead of trying to start a new one.`);
@@ -284,18 +284,18 @@ client.on('messageCreate', async message => {
 				if (game) {
 					message.channel.send(`The rules of the game **${game.name}** are as follows:\n ${game.rules(client.globalSettings, client.gameSettings[gameId])}\n\nFor additional commands, try \`${PREFIX}help\`.${(client.globalSettings.ignorePrefix ? `\nMessages starting with \`${client.globalSettings.ignorePrefix}\` will be ignored.` : '')}`);
 				} else {
-					message.author.send(`There is no game **${gameId}**. Use \`${PREFIX}list\` in here to retrieve a list of available games.`);
+					message.author.send(`There is no game with id \`${gameId}\`. Use \`${PREFIX}list\` in here to retrieve a list of available games.`);
 				}
 			}
 		} else if (command === 'rules') {
 			if (gameSession) {
-				message.author.send(`I will gladly explain the rules of the game ${gameSession.game.name} in #${message.channel.name} on ${message.guild.name} to you:\n ${gameSession.game.rules(client.globalSettings, gameSession.settings)}\n\nFor additional commands, try \`${PREFIX}help\`.${(client.globalSettings.ignorePrefix ? `\nMessages starting with \`${client.globalSettings.ignorePrefix}\` will be ignored.` : '')}`);
+				message.author.send(`I will gladly explain the rules of the game **${gameSession.game.name}** in #${message.channel.name} on ${message.guild.name} to you:\n ${gameSession.game.rules(client.globalSettings, gameSession.settings)}\n\nFor additional commands, try \`${PREFIX}help\`.${(client.globalSettings.ignorePrefix ? `\nMessages starting with \`${client.globalSettings.ignorePrefix}\` will be ignored.` : '')}`);
 			} else if (gameId) {
 				const game = client.games.get(gameId);
 				if (game) {
-					message.author.send(`I will gladly explain the rules of the game ${game.name} to you:\n\n ${game.rules(client.globalSettings, client.gameSettings[gameId])}\n\nFor additional commands, try \`${PREFIX}help\`.${(client.globalSettings.ignorePrefix ? `\nMessages starting with \`${client.globalSettings.ignorePrefix}\` will be ignored.` : '')}`);
+					message.author.send(`I will gladly explain the rules of the game **${game.name}** to you:\n\n ${game.rules(client.globalSettings, client.gameSettings[gameId])}\n\nFor additional commands, try \`${PREFIX}help\`.${(client.globalSettings.ignorePrefix ? `\nMessages starting with \`${client.globalSettings.ignorePrefix}\` will be ignored.` : '')}`);
 				} else {
-					message.author.send(`There is no game **${gameId}**. Use \`${PREFIX}list\` in here to retrieve a list of available games.`);
+					message.author.send(`There is no game with id \`${gameId}\`. Use \`${PREFIX}list\` in here to retrieve a list of available games.`);
 				}
 			} else if (message.guild) {
 				message.author.send(`There is currently no game running in #${message.channel.name} on ${message.guild.name}. Try ${isPrivileged ? `starting one in there with \`${PREFIX}start <gameId>\` or ` : ''}asking me here for the rules for a specific game with \`${PREFIX}rules <gameId>\`.`);
@@ -308,24 +308,24 @@ client.on('messageCreate', async message => {
 				message.author.send(`There is currently no game running in #${message.channel.name} on ${message.guild.name}. You can only change settings if there is a game running.`);
 				message.react('🚫').catch(console.error);
 			} else if (!commandArgs.match(/^[A-Za-z0-9\-_.]+ [^<>\\]+$/g) || (!client.isOverridableSetting(setting) && !gameSession.game.hasSetting(setting))) {
-				message.author.send(`There is no setting of that name available in ${gameSession.game.name} (\`${gameSession.game.id}\`).`);
+				message.author.send(`There is no setting \`${setting}\` available in ${gameSession.game.name} (\`${gameSession.game.id}\`).`);
 				message.react('🚫').catch(console.error);
 			} else if (client.validateOverridableSetting(setting, value)) {
 				client.gameSessionLocks.acquire(gameSession.id, () => {
-					message.author.send(`Setting ${setting} to ${value} for ${gameSession.game.name} (\`${gameSession.game.id}\`) in #${message.channel.name} on ${message.guild.name}.`);
+					message.author.send(`Setting \`${setting}\` (override) to \`${value}\` for ${gameSession.game.name} (\`${gameSession.game.id}\`) in #${message.channel.name} on ${message.guild.name}.`);
 					gameSession.settings[setting] = client.parseOverridableSetting(setting, value);
 					client.storeGameSession(gameSession);
 					message.react('⚙️').catch(console.error);
 				});
 			} else if (gameSession.game.validateSetting(setting, value)) {
 				client.gameSessionLocks.acquire(gameSession.id, () => {
-					message.author.send(`Setting ${setting} to ${value} for ${gameSession.game.name} (\`${gameSession.game.id}\`) in #${message.channel.name} on ${message.guild.name}.`);
+					message.author.send(`Setting \`${setting}\` (game) to ${value} for ${gameSession.game.name} (\`${gameSession.game.id}\`) in #${message.channel.name} on ${message.guild.name}.`);
 					gameSession.settings[setting] = gameSession.game.parseSetting(setting, value);
 					client.storeGameSession(gameSession);
 					message.react('⚙️').catch(console.error);
 				});
 			} else {
-				message.author.send(`The value you provided for setting ${setting} for ${gameSession.game.name} (\`${gameSession.game.id}\`) in #${message.channel.name} on ${message.guild.name} is invalid.`);
+				message.author.send(`The value \`${value}\` for setting \`${setting}\` for ${gameSession.game.name} (\`${gameSession.game.id}\`) in #${message.channel.name} on ${message.guild.name} is invalid.`);
 				message.react('🚫').catch(console.error);
 			}
 		} else if (command === 'settings' && message.guild && isPrivileged && gameSession) {
@@ -334,6 +334,18 @@ client.on('messageCreate', async message => {
 			message.channel.send(gameSession.game.score(client.globalSettings, gameSession.settings, gameSession.data));
 		} else if (command === 'score' && message.guild && gameSession) {
 			message.author.send(`Current score for the game ${gameSession.game.name} in #${message.channel.name} on ${message.guild.name}:\n${gameSession.game.score(client.globalSettings, gameSession.settings, gameSession.data)}`);
+		} else if (command === 'myscore' && message.guild && gameSession) {
+			if (!gameSession.settings.enableScore) {
+				message.author.send(`Unable to show your detailed score for the game ${gameSession.game.name} in #${message.channel.name} on ${message.guild.name}, because scoring has been disabled for this game session.`);
+			} else {
+				message.author.send(`Here is your detailed score for the game ${gameSession.game.name} in #${message.channel.name} on ${message.guild.name}:\n${gameSession.game.userScore(client.globalSettings, gameSession.settings, gameSession.data, message.author, isPrivileged)}`);
+			}
+		} else if (command === 'userscore' && message.guild && isPrivileged && gameSession) {
+			if (!gameSession.settings.enableScore) {
+				message.author.send(`Unable to show detailed user scores for the game ${gameSession.game.name} in #${message.channel.name} on ${message.guild.name}, because scoring has been disabled for this game session.`);
+			} else {
+				message.author.send(`Here is the detailed score for ${commandArgs ? `user \`${commandArgs}\`` : 'all users'} for the game ${gameSession.game.name} in #${message.channel.name} on ${message.guild.name}:\n${gameSession.game.userScore(client.globalSettings, gameSession.settings, gameSession.data, { id: commandArgs, tag: commandArgs }, isPrivileged)}`);
+			}
 		} else {
 			message.react('🚫').catch(console.error);
 			message.author.send(`The command \`${PREFIX}${command}\` is unknown or may exclusively be available for use in a channel or via DM.\nTry \`${PREFIX}help\` in here for a list of available commands.`);
@@ -355,8 +367,8 @@ client.on('messageReactionAdd', async (messageReaction) => {
 		if (restartVoteCount >= client.getEffectiveSettingValue('unprivilegedRestartVotes', gameSession)) {
 			console.log(`Restarting the game ${gameSession.game.name} (${gameSession.id}) in channel ${messageReaction.message.channel.name} (${messageReaction.message.channel.id}) on ${messageReaction.message.guild.name} (${messageReaction.message.guild.id}).`);
 			await gameSession.restartVoteMessage.react('🔄').catch(console.error);
-			await client.restartGame(gameSession);
 			messageReaction.message.channel.send(`🔄 Restart vote successful! Restarting the game ${gameSession.game.name} in 3, 2, 1 …`);
+			await client.restartGame(gameSession);
 		}
 	}
 });

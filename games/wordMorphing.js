@@ -1,25 +1,38 @@
 /*
-    YARDisGB – Yet Another Random Discord Game Bot
-    Copyright (C) 2020  Dominik "Fenrikur" Schöner <yardisgb@fenrikur.de>
+	YARDisGB – Yet Another Random Discord Game Bot
+	Copyright (C) 2020  Fenrikur <yardisgb [at] fenrikur.de>
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+	This program is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 const Discord = require('discord.js');
 const utils = require('../utils.js');
 const dictionaries = require('../dictionaries.js');
 const { prefix: PREFIX } = require('../config.json');
+
+const DIGITS = Object.freeze(['0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟']);
+const MoveType = Object.freeze({
+	repetition: { name: 'repetition', isSuccess: false, isPrivileged: false, emoji: '❌🔁', description: 'Repetitions of previously used words' },
+	invalid: { name: 'invalid', isSuccess: false, isPrivileged: false, emoji: '❌🚔', description: 'Words that did not adhere to the rules' },
+	edgeChange: { name: 'edgeChange', isSuccess: true, isPrivileged: false, emoji: '🔀↔️', description: 'Changes to the first or last character of a word' },
+	innerChange: { name: 'innerChange', isSuccess: true, isPrivileged: false, emoji: '🔀💠', description: 'Changes within a word' },
+	edgeRemoval: { name: 'edgeRemoval', isSuccess: true, isPrivileged: false, emoji: '🚮↔️', description: 'Removals of the first or last character of a word' },
+	innerRemoval: { name: 'innerRemoval', isSuccess: true, isPrivileged: false, emoji: '🚮💠', description: 'Removals of a character within a word' },
+	edgeAddition: { name: 'edgeAddition', isSuccess: true, isPrivileged: false, emoji: '🆕↔️', description: 'Additions of a character at the beginning or end of a word' },
+	innerAddition: { name: 'innerAddition', isSuccess: true, isPrivileged: false, emoji: '🆕💠', description: 'Additions of a character within a word' },
+	firstWord: { name: 'firstWord', isSuccess: true, isPrivileged: true, emoji: '▶️1️⃣', description: 'First word in a game session' },
+});
 
 function getSummary(data) {
 	return `The game has been running for ${data.startTime ? utils.millisecondsToText(Date.now() - data.startTime) : 'an unknown period of time'} and all of you together managed to morph the starting word a total of ${Math.max(data.morphCount || 0, 0)} times!`;
@@ -28,9 +41,9 @@ function getSummary(data) {
 function getScore(data) {
 	if (data.score && data.score.size > 0) {
 		let message = 'Here are the top contributors to the game session:';
-		data.score.sort((a, b) => (b.successCount - b.failureCount) - (a.successCount - a.failureCount));
+		data.score.sort((a, b) => b.totalScore - a.totalScore);
 		data.score.first(10).forEach((userScore, rank) => {
-			message += `\n${rank + 1}. ${userScore.username} [${userScore.tag}] (✅: ${userScore.successCount} | ❌: ${userScore.failureCount} | 🧮: ${userScore.successCount - userScore.failureCount})`;
+			message += `\n${rank + 1}. ${userScore.username} [${userScore.tag}] | 🧮: ${userScore.totalScore}`;
 		});
 		return message + '\n';
 	} else {
@@ -38,28 +51,50 @@ function getScore(data) {
 	}
 }
 
+function getDetailedScore(userScore, isPrivileged) {
+	const valueColumnWidth = 4;
+	let result = `🧮🧮 | \`${utils.createPaddedString(userScore.totalScore || '-', valueColumnWidth)}\` | Total number of points earned\n`;
+	
+	Object.entries(userScore.statistics).forEach(entry => {
+		if (!MoveType[entry[0]].isPrivileged || isPrivileged){
+			result += `${MoveType[entry[0]].emoji} | \`${utils.createPaddedString(entry[1] || '-', valueColumnWidth)}\` | ${MoveType[entry[0]].description}\n`;
+		}
+	});
+
+	return result.trim();
+}
+
+function UserScore(user) {
+	this.id = (user && user.id) ? user.id : 0;
+	this.username = (user && user.username) ? user.username : '';
+	this.tag = (user && user.tag) ? user.tag : '';
+	this.totalScore = 0;
+	this.statistics = Object.fromEntries(Object.keys(MoveType).map(moveType => [moveType, 0]));
+}
+
+function getUserScoreSuccessCount(userScore) {
+	return Object.entries(userScore.statistics).map((entry) => MoveType[entry[0]].isSuccess ? entry[1] : 0).reduce((previousValue, currentValue) => previousValue + currentValue);
+}
+
+function getUserScoreFailureCount(userScore) {
+	return Object.entries(userScore.statistics).map((entry) => !MoveType[entry[0]].isSuccess ? entry[1] : 0).reduce((previousValue, currentValue) => previousValue + currentValue);
+}
+
 function getUserScore(data, user) {
-	if (!data.score) {
-		return {
-			id: 0,
-			username: '',
-			tag: '',
-			successCount: 0,
-			failureCount: 0,
-		};
+	if (!data.score || !user || !user.id || !user.id.match(/^[0-9]+$/)) {
+		return new UserScore();
 	} else if (data.score.has(user.id)) {
 		return data.score.get(user.id);
 	} else {
-		const userScore = {
-			id: user.id,
-			username: user.username,
-			tag: user.tag,
-			successCount: 0,
-			failureCount: 0,
-		};
+		const userScore = new UserScore(user);
 		data.score.set(user.id, userScore);
 		return userScore;
 	}
+}
+
+function doSessionEnd(globalSettings, gameSettings, data, channel) {
+	channel.send(getSummary(data));
+	gameSettings.enableScore && channel.send(getScore(data));
 }
 
 module.exports = {
@@ -70,6 +105,25 @@ module.exports = {
 	},
 	score: function (globalSettings, gameSettings, data) {
 		return `${getSummary(data)}${gameSettings.enableScore ? `\n${getScore(data)}` : ''}`;
+	},
+	userScore: function (globalSettings, gameSettings, data, user, isPrivileged) {
+		let result = '';
+		if (!data.score) {
+			result = 'No scores available.';
+		} else if (!user || !user.tag) {
+			result += '----\n';
+			data.score.forEach(userScore => {
+				result += `User \`${userScore.tag}\`\n${getDetailedScore(userScore, isPrivileged)}\n----\n`;
+			});
+		} else {
+			const userScore = data.score.find(entry => entry.id === user.id || entry.tag === user.tag);
+			if (userScore) {
+				result = getDetailedScore(userScore, isPrivileged);
+			} else {
+				result = `No score available for \`${user.tag || user.id}\`.`;
+			}
+		}
+		return result;
 	},
 	start: function () {
 		return {
@@ -89,15 +143,14 @@ module.exports = {
 	},
 	onStart: function (globalSettings, gameSettings, data, channel) {
 		try {
-			channel.send('Starting the game … please wait while we sort our vowels and consonants.');
+			channel.send('Please provide a word to serve as the starting point for this session.');
 		} catch (error) {
 			console.error('Failed to send message to channel!', channel);
 		}
 	},
 	onEnd: function (globalSettings, gameSettings, data, channel) {
 		try {
-			channel.send(getSummary(data));
-			gameSettings.enableScore && channel.send(getScore(data));
+			doSessionEnd(globalSettings, gameSettings, data, channel);
 			channel.send('It was fun while it lasted! Bye!');
 		} catch (error) {
 			console.error('Failed to send message to channel!', channel);
@@ -106,8 +159,7 @@ module.exports = {
 	onRestart: function (globalSettings, gameSettings, data, channel) {
 		try {
 			channel.send('So you got stuck, eh? Let\'s try this again!');
-			channel.send(getSummary(data));
-			gameSettings.enableScore && channel.send(getScore(data));
+			doSessionEnd(globalSettings, gameSettings, data, channel);
 		} catch (error) {
 			console.error('Failed to send message to channel!', channel);
 		}
@@ -119,38 +171,47 @@ module.exports = {
 		const messageContent = gameSettings.caseInsensitive ? message.content.toLowerCase() : message.content;
 		const messageLength = [...messageContent].length;
 		let errorMessage = false;
-
-		if (!gameSettings.enableScore && data.score) {
-			data.score = false;
-		}
+		let moveType = false;
+		let userScore = (gameSettings.enableScore && data.score) ? getUserScore(data, message.author) : false;
 
 		if (/\s/g.test(messageContent)) {
 			errorMessage = 'Only contiguous words are allowed in this game. Try again.';
+			moveType = MoveType.invalid;
 		} else if (!/^\p{General_Category=Letter}+$/gu.test(messageContent)) {
 			errorMessage = 'Only letters are allowed. Try again.';
+			moveType = MoveType.invalid;
 		} else if (previousMessage === null) {
-			message.react('1️⃣').catch(console.error);
+			message.react('🚀').catch(console.error);
 			globalSettings.debugMode && console.log(`${message.channel.name} (${message.channel.id}): Set first word to '${messageContent}'`);
+			moveType = MoveType.firstWord;
 		} else if (!gameSettings.allowSameUser && message.author.id === previousMessage.author.id) {
 			errorMessage = 'Don\'t just play with yourself, let the others participate as well!';
+			moveType = MoveType.invalid;
 		} else if (messageContent === previousMessageContent) {
 			if (message.createdTimestamp - previousMessage.createdTimestamp < 1000) {
 				message.react('🐌');
 				errorMessage = true;
+				moveType = false;
 			} else {
-				errorMessage = 'Simply repeating the previous word is not going to get us anywhere, try coming up with something new!';
+				errorMessage = 'Simply repeating the current word is not going to get us anywhere, try coming up with something new!';
+				moveType = MoveType.repetition;
 			}
 		} else if (gameSettings.wordHistoryLength > 0 && data.wordHistory.indexOf(messageContent) >= Math.max(0, data.wordHistory.length - gameSettings.wordHistoryLength)) {
-			errorMessage = 'Simply repeating a recently used word is not going to get us anywhere, try coming up with something new!';
+			errorMessage = `Your new word **${messageContent}** has been used within the last ${gameSettings.wordHistoryLength} moves, try coming up with something new!`;
+			moveType = MoveType.repetition;
 		} else if (messageLength > previousMessageLength + 1) {
 			errorMessage = `Your new word **${messageContent}** has more than one character more than the previous word!`;
+			moveType = MoveType.invalid;
 		} else if (messageLength < previousMessageLength - 1) {
 			errorMessage = `Your new word **${messageContent}** has more than one character less than the previous word!`;
+			moveType = MoveType.invalid;
 		} else {
 			let shortMessage = messageContent;
 			let longMessage = previousMessageContent;
 			const hasDifferentLength = messageLength !== previousMessageLength;
-			if (messageLength > previousMessageLength) {
+			const isAddition = messageLength > previousMessageLength;
+			let isEdgeChange = true;
+			if (isAddition) {
 				shortMessage = previousMessageContent;
 				longMessage = messageContent;
 			}
@@ -161,10 +222,12 @@ module.exports = {
 				const longMessageChar = longMessage.charCodeAt(longIndex);
 				if (diffCount > 1) {
 					errorMessage = `Your new word **${messageContent}** differs from the previous word in more than one letter!`;
+					moveType = MoveType.invalid;
 					break;
 				} else if (!shortMessageChar && !longMessageChar) {
 					break;
 				} else if (shortMessageChar !== longMessageChar) {
+					isEdgeChange = shortIndex == 0 || shortIndex >= shortMessage.length - 1;
 					diffCount++;
 					if (hasDifferentLength && shortMessageChar === longMessage.charCodeAt(longIndex + 1)) {
 						longIndex++;
@@ -173,11 +236,32 @@ module.exports = {
 					}
 				}
 			}
+
+			if (!errorMessage) {
+				if (isAddition) {
+					if (isEdgeChange) {
+						moveType = MoveType.edgeAddition;
+					} else {
+						moveType = MoveType.innerAddition;
+					}
+				} else if (hasDifferentLength) {
+					if (isEdgeChange) {
+						moveType = MoveType.edgeRemoval;
+					} else {
+						moveType = MoveType.innerRemoval;
+					}
+				} else {
+					if (isEdgeChange) {
+						moveType = MoveType.edgeChange;
+					} else {
+						moveType = MoveType.innerChange;
+					}
+				}
+			}
 		}
 
 		if (errorMessage) {
 			message.react('❌').catch(console.error);
-			gameSettings.enableScore && data.score && getUserScore(data, message.author).failureCount++;
 			if (errorMessage !== true) {
 				message.reply(`${errorMessage}${previousMessage !== null ? ` The current word is still: **${previousMessage.content}**` : ''}`);
 			}
@@ -190,7 +274,6 @@ module.exports = {
 					if (gameSettings.enforceDictionary) {
 						message.react('✅').catch(console.error);
 						data.morphCount++;
-						gameSettings.enableScore && data.score && getUserScore(data, message.author).successCount++;
 						gameSettings.wordHistoryLength > 0 && data.wordHistory.push(messageContent);
 						if (data.wordHistory.length > gameSettings.wordHistoryLength) {
 							data.wordHistory = data.wordHistory.slice(data.wordHistory.length - gameSettings.wordHistoryLength);
@@ -209,7 +292,7 @@ module.exports = {
 					errorMessage = `We failed to find the word **${messageContent}** in the dictionary.`;
 					if (gameSettings.enforceDictionary) {
 						message.react('❌').catch(console.error);
-						gameSettings.enableScore && data.score && getUserScore(data, message.author).failureCount++;
+						moveType = MoveType.invalid;
 						if (previousMessage) {
 							message.reply(`${errorMessage} The current word is still: **${previousMessage.content}**`);
 						} else {
@@ -226,7 +309,6 @@ module.exports = {
 			if (!gameSettings.dictionaryUrl || !gameSettings.enforceDictionary) {
 				message.react('✅').catch(console.error);
 				data.morphCount++;
-				gameSettings.enableScore && data.score && getUserScore(data, message.author).successCount++;
 				gameSettings.wordHistoryLength > 0 && data.wordHistory.push(messageContent);
 				if (data.wordHistory.length > gameSettings.wordHistoryLength) {
 					data.wordHistory = data.wordHistory.slice(data.wordHistory.length - gameSettings.wordHistoryLength);
@@ -238,6 +320,14 @@ module.exports = {
 					createdTimestamp: message.createdTimestamp,
 				};
 			}
+			
+		}
+		if (userScore && moveType) {
+			const scoreValue = gameSettings['scoreValue' + utils.capitalizeFirstLetter(moveType.name)] || 0;
+			userScore.statistics[moveType.name]++;
+			userScore.totalScore += scoreValue;
+			message.react(scoreValue == 0 ? '➡️' : (scoreValue > 0 ? '⬆️' : '⬇️')).catch(console.error);
+			message.react(DIGITS[Math.abs(scoreValue)]).catch(console.error);
 		}
 	},
 	onMessageUpdate: function (globalSettings, gameSettings, data, oldMessage, newMessage) {
@@ -255,18 +345,25 @@ module.exports = {
 			message.channel.send(`<@${message.author.id}> deleting your previous word after the fact is unfair! The current word is still: **${previousMessage.content}**`);
 		}
 	},
+	defaultSettings: {
+		allowSameUser: false,
+		wordHistoryLength: 10,
+		dictionaryUrl: "https://en.wiktionary.org/wiki/%s",
+		enforceDictionary: true,
+		caseInsensitive: true,
+		enableScore: true,
+		scoreValueRepetition: 0,
+		scoreValueInvalid: 0,
+		scoreValueEdgeChange: 1,
+		scoreValueInnerChange: 2,
+		scoreValueEdgeRemoval: 1,
+		scoreValueInnerRemoval: 1,
+		scoreValueEdgeAddition: 2,
+		scoreValueInnerAddition: 3,
+		scoreValueFirstWord: 0
+	},
 	hasSetting: function (setting) {
-		switch (setting) {
-			case 'allowSameUser':
-			case 'wordHistoryLength':
-			case 'dictionaryUrl':
-			case 'enforceDictionary':
-			case 'caseInsensitive':
-			case 'enableScore':
-				return true;
-			default:
-				return false;
-		}
+		return Object.keys(this.defaultSettings).indexOf(setting) >= 0;
 	},
 	validateSetting: function (setting, value) {
 		if (!setting || !value) {
@@ -286,6 +383,16 @@ module.exports = {
 				return value === 'true' || value === 'false';
 			case 'enableScore':
 				return value === 'true' || value === 'false';
+			case 'scoreValueRepetition':
+			case 'scoreValueInvalid':
+			case 'scoreValueEdgeChange':
+			case 'scoreValueInnerChange':
+			case 'scoreValueEdgeRemoval':
+			case 'scoreValueInnerRemoval':
+			case 'scoreValueEdgeAddition':
+			case 'scoreValueInnerAddition':
+			case 'scoreValueFirstWord':
+				return value.match(/^-?[0-9]+$/) && value >= -10 && value <= 10;
 			default:
 				return false;
 		}
@@ -308,6 +415,16 @@ module.exports = {
 				return value === 'true';
 			case 'enableScore':
 				return value === 'true';
+			case 'scoreValueRepetition':
+			case 'scoreValueInvalid':
+			case 'scoreValueEdgeChange':
+			case 'scoreValueInnerChange':
+			case 'scoreValueEdgeRemoval':
+			case 'scoreValueInnerRemoval':
+			case 'scoreValueEdgeAddition':
+			case 'scoreValueInnerAddition':
+			case 'scoreValueFirstWord':
+				return Number.parseInt(value);
 			default:
 				return undefined;
 		}

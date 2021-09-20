@@ -127,7 +127,17 @@ In order to have the bot use an offline dictionary, simply set `dictionaryUrl` t
 	"dictionaryUrl": "https://en.wiktionary.org/wiki/%s", // URL used for validating words against a dictionary; %s will be replaced by the word in question; 2xx HTTP status codes are interpreted as valid words; to disable dictionary checks altogether, set this to false
 	"enforceDictionary": true, // should the bot reject all words deemed invalid by the dictionary check?
 	"caseInsensitive": true, // should This and this be considered different words?
-	"enableScore": true // should scores for individual players be kept? (might impact performance as session files get bigger with more players)
+	"enableScore": true, // should scores for individual players be kept? (might impact performance as session files get bigger with more players)
+	// all scoreValue-Settings must be in the range [-10, 10] and represent the number of points awarded or deducted for the respective move type
+	"scoreValueRepetition": 0, // repetition of a previously used word from the current word history
+	"scoreValueInvalid": 0, // invalid move like e.g. more than one change, multiple words or illegal characters
+	"scoreValueEdgeChange": 1, // change at the beginning or end of the current word
+	"scoreValueInnerChange": 2, // change within the current word
+	"scoreValueEdgeRemoval": 1, // removal of a character from the beginning or end of the current word
+	"scoreValueInnerRemoval": 1, // removal of a character from within the current word
+	"scoreValueEdgeAddition": 2, // addition of a character at the beginning or end of the current word
+	"scoreValueInnerAddition": 3, // addition of a character within the current word
+	"scoreValueFirstWord": 0 // first word of a game session
 }
 ```
 
