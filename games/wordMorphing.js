@@ -92,11 +92,6 @@ function getUserScore(data, user) {
 	}
 }
 
-function doSessionEnd(globalSettings, gameSettings, data, channel) {
-	channel.send(getSummary(data));
-	gameSettings.enableScore && channel.send(getScore(data));
-}
-
 module.exports = {
 	id: 'wordMorphing',
 	name: 'Word Morphing',
@@ -150,16 +145,14 @@ module.exports = {
 	},
 	onEnd: function (globalSettings, gameSettings, data, channel) {
 		try {
-			doSessionEnd(globalSettings, gameSettings, data, channel);
-			channel.send('It was fun while it lasted! Bye!');
+			channel.send(`${this.score(globalSettings, gameSettings, data)}\n\nIt was fun while it lasted! Bye!`);
 		} catch (error) {
 			console.error('Failed to send message to channel!', channel);
 		}
 	},
 	onRestart: function (globalSettings, gameSettings, data, channel) {
 		try {
-			channel.send('So you got stuck, eh? Let\'s try this again!');
-			doSessionEnd(globalSettings, gameSettings, data, channel);
+			channel.send(`So you got stuck, eh? Let's try this again!\n\n${this.score(globalSettings, gameSettings, data)}`);
 		} catch (error) {
 			console.error('Failed to send message to channel!', channel);
 		}
