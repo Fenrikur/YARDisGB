@@ -227,7 +227,7 @@ module.exports = {
 				} else if (!shortMessageChar && !longMessageChar) {
 					break;
 				} else if (shortMessageChar !== longMessageChar) {
-					isEdgeChange = shortIndex == 0 || shortIndex >= shortMessage.length - 1;
+					isEdgeChange = shortIndex === 0 || longIndex === longMessage.length - 1;
 					diffCount++;
 					if (hasDifferentLength && shortMessageChar === longMessage.charCodeAt(longIndex + 1)) {
 						longIndex++;
