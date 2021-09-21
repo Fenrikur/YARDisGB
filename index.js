@@ -89,7 +89,7 @@ client.startGame = async function (gameId, sessionId, sessionSettings) {
 		id: sessionId,
 		game: game,
 		data: game.start(),
-		settings: Object.assign({}, game.defaultSettings, client.gameSettings[gameId], sessionSettings ? Object.fromEntries(Object.entries(sessionSettings).filter(entry => game.hasSetting(entry[0]))) : {}),
+		settings: Object.assign({}, game.defaultSettings, client.gameSettings[gameId], sessionSettings ? Object.fromEntries(Object.entries(sessionSettings).filter(entry => game.hasSetting(entry[0]) || client.isOverridableSetting(entry[0]))) : {}),
 		restartVoteCount: 0,
 		restartVoteMessage: null,
 		restartVoteTimeout: null,
